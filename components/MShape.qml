@@ -31,7 +31,7 @@ Shape {
         id: morph
         running: false
         from: 0; to: 1
-        duration: root.morphMs
+        duration: Theme.ms(root.morphMs)
         easing.type: Easing.BezierSpline
         easing.bezierCurve: Theme.spring
     }

@@ -1,81 +1,52 @@
 import QtQuick
-import Quickshell.Io
-import Quickshell.Services.Pipewire
 import qs.components
 import qs.services
 
-// Sound and battery in one pill (the quick settings open from it): the
-// default sink's volume from PipeWire -- the wheel turns it -- and the
-// battery's charge from sysfs. What the machine does not have is not shown.
+// The network, the sound and the battery in one pill: quick settings open
+// from it, the wheel turns the volume. What the machine lacks is not drawn
+// (the battery), or drawn crossed out (no way to the network).
 Rectangle {
     id: root
-    signal clicked
+    property bool vert: false
+    readonly property bool on: Ui.pop === "qs"
 
-    readonly property var sink: Pipewire.defaultAudioSink
-    readonly property real vol: sink && sink.audio ? sink.audio.volume : 0
-    readonly property bool muted: sink && sink.audio ? sink.audio.muted : false
-    property int battery: -1
-
-    PwObjectTracker { objects: root.sink ? [root.sink] : [] }
-
-    FileView {
-        id: bat
-        path: "/sys/class/power_supply/BAT0/capacity"
-        onLoaded: root.battery = parseInt(text()) || -1
-        onLoadFailed: root.battery = -1
-    }
-    Timer { interval: 30000; running: true; repeat: true; onTriggered: bat.reload() }
-
-    implicitWidth: row.implicitWidth + 28
-    implicitHeight: 40
-    radius: area.containsMouse ? 14 : 20
-    color: area.containsMouse ? Qt.rgba(Theme.onSurface.r, Theme.onSurface.g, Theme.onSurface.b, .1) : "transparent"
-    Behavior on radius { NumberAnimation { duration: 400; easing.type: Easing.BezierSpline; easing.bezierCurve: Theme.spring } }
+    implicitWidth: vert ? 40 : row.implicitWidth + 28
+    implicitHeight: vert ? col.implicitHeight + 20 : 40
+    radius: on || area.containsMouse ? 14 : 20
+    color: on ? Theme.secondaryContainer : area.containsMouse ? Theme.alpha(Theme.fgSurface, .1) : "transparent"
+    Behavior on radius { SpringAnim { ms: 400 } }
+    Behavior on color { ColorAnim { ms: 250 } }
+    readonly property color ink: on ? Theme.fgSecondaryContainer : Theme.fgSurface
 
     Row {
         id: row
+        visible: !root.vert
         anchors.centerIn: parent
         spacing: 8
-        MIcon {
-            visible: !!root.sink
-            text: root.muted || root.vol <= 0 ? "volume_off" : root.vol < .34 ? "volume_mute" : root.vol < .67 ? "volume_down" : "volume_up"
-            fill: true
-            size: 20
-        }
+        MIcon { text: Net.icon; fill: true; size: 20; color: Net.online ? root.ink : Theme.fgSurfaceVar }
+        MIcon { text: Audio.icon; fill: true; size: 20; color: root.ink; visible: Audio.present }
         Row {
-            visible: root.battery >= 0
+            visible: Power.present
             spacing: 4
-            MIcon {
-                text: root.battery > 85 ? "battery_full" : "battery_" + Math.max(0, Math.round(root.battery / 100 * 6)) + "_bar"
-                fill: true
-                size: 20
-            }
-            Text {
-                text: root.battery + "%"
-                font.family: Theme.font
-                font.pixelSize: 13
-                font.weight: Font.DemiBold
-                color: Theme.onSurface
-                anchors.verticalCenter: parent.verticalCenter
-            }
+            MIcon { text: Power.icon; fill: true; size: 20; color: root.ink }
+            Label { text: Power.capacity + "%"; size: 13; color: root.ink; anchors.verticalCenter: parent.verticalCenter }
         }
-        Text {
-            // nothing to show at all: say so, as the shell does for what is missing
-            visible: !root.sink && root.battery < 0
-            text: "нет звука"
-            font.family: Theme.font
-            font.pixelSize: 13
-            color: Theme.onSurfaceVar
-        }
+    }
+    Column {
+        id: col
+        visible: root.vert
+        anchors.centerIn: parent
+        spacing: 6
+        MIcon { text: Net.icon; fill: true; size: 20; color: root.ink; anchors.horizontalCenter: parent.horizontalCenter }
+        MIcon { text: Audio.icon; fill: true; size: 20; color: root.ink; visible: Audio.present; anchors.horizontalCenter: parent.horizontalCenter }
+        MIcon { text: Power.icon; fill: true; size: 20; color: root.ink; visible: Power.present; anchors.horizontalCenter: parent.horizontalCenter }
+        Label { text: Power.capacity; size: 11; w: Font.Bold; color: root.ink; visible: Power.present; anchors.horizontalCenter: parent.horizontalCenter }
     }
     MouseArea {
         id: area
         anchors.fill: parent
         hoverEnabled: true
-        onClicked: root.clicked()
+        onClicked: { const p = root.mapToItem(null, root.width / 2, root.height / 2); Ui.toggle("qs", root.vert ? p.y : p.x); }
     }
-    WheelHandler {
-        enabled: !!root.sink
-        onWheel: e => { if (root.sink && root.sink.audio) root.sink.audio.volume = Math.max(0, Math.min(1, root.vol + (e.angleDelta.y > 0 ? .05 : -.05))); }
-    }
+    WheelHandler { onWheel: e => Audio.step(e.angleDelta.y > 0 ? .05 : -.05) }
 }

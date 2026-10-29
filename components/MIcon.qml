@@ -9,7 +9,7 @@ Text {
     font.family: Theme.icons
     font.pixelSize: size
     font.variableAxes: ({ FILL: fill ? 1 : 0, wght: fill ? 500 : 450, GRAD: 0, opsz: Math.min(48, Math.max(20, size)) })
-    color: Theme.onSurface
+    color: Theme.fgSurface
     verticalAlignment: Text.AlignVCenter
     horizontalAlignment: Text.AlignHCenter
     renderType: Text.NativeRendering
