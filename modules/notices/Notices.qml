@@ -40,13 +40,21 @@ PanelWindow {
                 width: toasts.width
                 opacity: 0
                 Component.onCompleted: { opacity = 1; lifeAnim.start(); }
-                Behavior on opacity { SmoothAnim { ms: 250 } }
-                transform: Translate { id: tr; x: 40; Component.onCompleted: x = 0; Behavior on x { SpringAnim {} } }
+                scale: .9
+                Behavior on opacity { SmoothAnim { ms: 300 } }
+                Behavior on scale { SpringAnim { ms: 600 } }
+                transform: Translate {
+                    x: root.corner[1] === "c" ? 0 : root.corner[1] === "l" ? -tc.width * 1.1 : tc.width * 1.1
+                    y: root.corner[1] === "c" ? -40 : 0
+                    Component.onCompleted: { x = 0; y = 0; tc.scale = 1; }
+                    Behavior on x { SpringAnim { ms: 600 } }
+                    Behavior on y { SpringAnim { ms: 600 } }
+                }
                 Rectangle {
                     // how long it stays: a line that runs out
-                    anchors.bottom: parent.bottom; anchors.left: parent.left; anchors.margins: 12
-                    height: 3; radius: 1.5; color: Theme.primary; opacity: .6
-                    width: (parent.width - 24) * tc.life
+                    anchors.bottom: parent.bottom; anchors.left: parent.left
+                    height: 3; color: Theme.primary; opacity: .6
+                    width: parent.width * tc.life
                 }
                 property real life: 1
                 NumberAnimation on life { id: lifeAnim; running: false; from: 1; to: 0; duration: Config.data.notif.secs * 1000; paused: hov.hovered; onFinished: Notifs.dropToast(tc.modelData) }
@@ -55,28 +63,40 @@ PanelWindow {
         }
     }
 
-    // the OSD: the volume or the brightness
+    // the OSD (the prototype's .osd): a tall pill at the right edge, the
+    // icon, the level filling from below, the number
     Rectangle {
         id: osd
         readonly property bool vol: Ui.osd === "volume"
         readonly property real v: vol ? Audio.volume : Brightness.value
-        width: 340; height: 60; radius: 30
-        x: (root.width - width) / 2
-        y: root.height - height - 90 - root.inset("bottom")
+        width: 64; height: 300; radius: 32
+        x: root.width - width - 14 - root.inset("right") - 12
+        y: (root.height - height) / 2
         color: Theme.surfaceMid
         opacity: Ui.osd !== "" ? 1 : 0
         scale: Ui.osd !== "" ? 1 : .9
+        transform: Translate { x: Ui.osd !== "" ? 0 : 40; Behavior on x { SpringAnim { ms: 500 } } }
         visible: opacity > 0.01
-        Behavior on opacity { SmoothAnim { ms: 200 } }
-        Behavior on scale { SpringAnim {} }
-        Row {
-            anchors.centerIn: parent; spacing: 14
-            MIcon { text: osd.vol ? Audio.icon : "light_mode"; fill: true; size: 24; color: Theme.primary; anchors.verticalCenter: parent.verticalCenter }
+        Behavior on opacity { SmoothAnim { ms: 250 } }
+        Behavior on scale { SpringAnim { ms: 500 } }
+        Column {
+            anchors.fill: parent; anchors.margins: 8
+            spacing: 8
+            MIcon { anchors.horizontalCenter: parent.horizontalCenter; text: osd.vol ? Audio.icon : "light_mode"; fill: true; size: 24; color: Theme.fgSurfaceVar }
             Rectangle {
-                width: 200; height: 10; radius: 5; color: Theme.surfaceHighest; anchors.verticalCenter: parent.verticalCenter
-                Rectangle { width: parent.width * osd.v; height: parent.height; radius: 5; color: Theme.primary; Behavior on width { SmoothAnim { ms: 150 } } }
+                anchors.horizontalCenter: parent.horizontalCenter
+                width: 48; height: parent.height - 24 - 18 - 16
+                radius: 24; color: Theme.surfaceHighest
+                clip: true
+                Rectangle {
+                    anchors.bottom: parent.bottom
+                    width: parent.width; height: Math.max(24, parent.height * osd.v)
+                    topLeftRadius: 8; topRightRadius: 8; bottomLeftRadius: 24; bottomRightRadius: 24
+                    color: Theme.primary
+                    Behavior on height { SpringAnim { ms: 350 } }
+                }
             }
-            Label { text: Math.round(osd.v * 100); size: 15; w: Font.Bold; width: 34; anchors.verticalCenter: parent.verticalCenter }
+            Label { anchors.horizontalCenter: parent.horizontalCenter; text: Math.round(osd.v * 100); size: 13; w: 750; font.features: { "tnum": 1 } }
         }
     }
 }

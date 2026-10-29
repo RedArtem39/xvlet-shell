@@ -5,7 +5,8 @@ import Quickshell
 import Quickshell.Io
 import qs.services
 
-// The wallpapers: the system's (/usr/share/wynland/wallpapers) and the
+// The wallpapers: the shell's own (assets/walls), the system's
+// (/usr/share/wynland/wallpapers) and the
 // user's own (~/Pictures/Wallpapers); pictures only. Listed at start and
 // each time the picker opens.
 Singleton {
@@ -15,9 +16,19 @@ Singleton {
     Process {
         id: ls
         running: true
-        command: ["sh", "-c", "for d in /usr/share/wynland/wallpapers \"$HOME/Pictures/Wallpapers\"; do ls -1 \"$d\" 2>/dev/null | grep -iE '\\.(png|jpe?g|webp)$' | sed \"s|^|$d/|\"; done"]
+        command: ["sh", "-c", "for d in \"$0\" /usr/share/wynland/wallpapers \"$HOME/Pictures/Wallpapers\"; do ls -1 \"$d\" 2>/dev/null | grep -iE '\\.(png|jpe?g|webp)$' | sed \"s|^|$d/|\"; done", Qt.resolvedUrl("../assets/walls").toString().replace("file://", "")]
         stdout: StdioCollector { onStreamFinished: root.list = text.split("\n").filter(l => l.trim() !== "") }
     }
     function refresh() { ls.running = true; }
     function set(path) { Config.set("wall.path", path); }
+    // the shell's own have names (the prototype's), the rest their file's
+    readonly property var names: ({ dusk: "Сумерки", mint: "Мята", amber: "Янтарь", ocean: "Океан", sakura: "Сакура", forest: "Лес",
+                                    night: "Ночь", mountains: "Горы", desert: "Пустыня", waves: "Волны", lava: "Лава", lavender: "Лаванда" })
+    // their hues (the prototype's WALLS[].h), for the picker's colours
+    readonly property var hues: ({ dusk: 285, mint: 165, amber: 55, ocean: 235, sakura: 350, forest: 135, night: 265, mountains: 220, desert: 40, waves: 200, lava: 25, lavender: 300 })
+    function hueOf(path) { const k = (path || "").split("/").pop().replace(/\.[^.]+$/, "").replace(/^\d+-/, ""); return hues[k] !== undefined ? hues[k] : -1; }
+    function nameOf(path) {
+        const f = (path || "").split("/").pop().replace(/\.[^.]+$/, ""), k = f.replace(/^\d+-/, "");
+        return names[k] || f;
+    }
 }

@@ -86,14 +86,22 @@ PanelWindow {
         Row {
             anchors.horizontalCenter: parent.horizontalCenter
             spacing: 44
-            Label { text: Qt.formatTime(clock.date, "hh"); size: 190; w: Font.ExtraBold; color: Theme.primary; style: Text.Raised; styleColor: Qt.rgba(0, 0, 0, .3) }
-            Label { text: Qt.formatTime(clock.date, "mm"); size: 190; w: Font.ExtraBold; color: Theme.fgSurface; style: Text.Raised; styleColor: Qt.rgba(0, 0, 0, .3) }
+            Big { text: Qt.formatTime(clock.date, "hh"); color: Theme.primary }
+            Big { text: Qt.formatTime(clock.date, "mm"); color: Theme.fgSurface }
         }
         Label {
             anchors.horizontalCenter: parent.horizontalCenter
             text: clock.date.toLocaleDateString(Qt.locale("ru_RU"), "dddd, d MMMM").toUpperCase()
-            size: 17; color: Theme.fgSurfaceVar; font.letterSpacing: 1.5
+            size: 17; w: 600; color: Theme.fgSurfaceVar; font.letterSpacing: 17 * .09; topPadding: 18
         }
+    }
+    // the clock's digits: heavy, tight, a hard shadow 4 px under them
+    component Big: Item {
+        property alias text: bt.text
+        property alias color: bt.color
+        width: bt.implicitWidth; height: bt.implicitHeight * .9
+        Label { x: 0; y: 4; text: bt.text; size: 190; w: 800; font.letterSpacing: -7.6; color: Qt.rgba(0, 0, 0, .32); font.features: { "tnum": 1 } }
+        Label { id: bt; size: 190; w: 800; font.letterSpacing: -7.6; font.features: { "tnum": 1 } }
     }
 
     // the panel: 1280 x 566; its core (440) comes first, the wings after

@@ -108,15 +108,17 @@ PanelWindow {
             horizontalItemAlignment: Grid.AlignHCenter
             verticalItemAlignment: Grid.AlignVCenter
             Repeater { model: root.pinned; DockItem { required property var modelData; app: modelData } }
-            Rectangle {
-                visible: root.extra.length > 0
-                width: root.vert ? root.ds * .6 : 2; height: root.vert ? 2 : root.ds * .6
-                radius: 1; color: Theme.outline
-            }
+            Sep { visible: root.extra.length > 0 }
             Repeater { model: root.extra; DockItem { required property var modelData; app: modelData } }
-            Rectangle { width: root.vert ? root.ds * .6 : 2; height: root.vert ? 2 : root.ds * .6; radius: 1; color: Theme.outline }
+            Sep {}
             DockItem { app: null }
         }
+    }
+
+    // the separator (.dsep)
+    component Sep: Item {
+        width: root.vert ? 36 : 10; height: root.vert ? 10 : 36
+        Rectangle { anchors.centerIn: parent; width: root.vert ? 36 : 2; height: root.vert ? 2 : 36; radius: 1; color: Theme.outline; opacity: .5 }
     }
 
     // an app in the dock: zooms under the pointer, its name in a tip, a dot
@@ -165,23 +167,27 @@ PanelWindow {
             visible: root.dcfg.inds && di.runs
             color: di.focused ? Theme.primary : Theme.fgSurfaceVar
             radius: 2
-            width: root.vert ? 4 : (di.focused ? 16 : 6)
-            height: root.vert ? (di.focused ? 16 : 6) : 4
+            width: root.vert ? 4 : (di.focused ? 20 : 6)
+            height: root.vert ? (di.focused ? 20 : 6) : 4
             x: root.vert ? (root.pos === "left" ? 0 : parent.width - 4) : (parent.width - width) / 2
-            y: root.vert ? (parent.height - height) / 2 : (root.pos === "bottom" ? parent.height - 2 : -2)
+            y: root.vert ? (parent.height - height) / 2 : (root.pos === "bottom" ? parent.height - 4 : 0)
             Behavior on width { SpringAnim {} }
             Behavior on height { SpringAnim {} }
         }
         // the tip, away from the edge
         Rectangle {
-            visible: ma.containsMouse && !root.dcfg.labels
-            opacity: visible ? 1 : 0
-            color: Theme.surfaceHighest
-            radius: 10
-            width: tip.implicitWidth + 20; height: 30
+            readonly property bool on: ma.containsMouse && !root.dcfg.labels
+            opacity: on ? 1 : 0
+            scale: on ? 1 : .9
+            color: Theme.fgSurface
+            radius: 14
+            width: tip.implicitWidth + 28; height: tip.implicitHeight + 16
             x: root.vert ? (root.pos === "left" ? parent.width + 14 : -width - 14) : (parent.width - width) / 2
             y: root.vert ? (parent.height - height) / 2 : (root.pos === "bottom" ? -height - 14 : parent.height + 14)
-            Label { id: tip; anchors.centerIn: parent; text: di.all ? "Все приложения" : di.app.name; size: 13 }
+            transform: Translate { y: root.vert ? 0 : parent.children.length && ma.containsMouse ? 0 : (root.pos === "bottom" ? 8 : -8); Behavior on y { SpringAnim { ms: 400 } } }
+            Behavior on opacity { NumberAnimation { duration: 200 } }
+            Behavior on scale { SpringAnim { ms: 400 } }
+            Label { id: tip; anchors.centerIn: parent; text: di.all ? "Все приложения" : di.app.name; size: 13; w: 650; color: Theme.surface }
         }
         MouseArea {
             id: ma

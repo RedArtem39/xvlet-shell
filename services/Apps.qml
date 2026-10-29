@@ -50,5 +50,7 @@ Singleton {
     }
     function icon(a) { return a && a.icon ? Quickshell.iconPath(a.icon, true) : ""; }
     // a colour for an app that has no icon: its name's hue
+    // the first of the launcher's categories an app is in
+    function catName(a) { const c = cats.find(c => c.k && c.k !== "fav" && (a.categories || []).includes(c.k)); return c ? c.n : ""; }
     function hue(a) { let h = 0; for (const ch of (a ? a.name : "?")) h = (h * 31 + ch.charCodeAt(0)) % 360; return h; }
 }

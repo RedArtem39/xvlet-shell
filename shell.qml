@@ -21,6 +21,7 @@ import "modules/lock"
 
 ShellRoot {
     FontLoader { source: Qt.resolvedUrl("assets/fonts/RobotoFlex.ttf") }
+    FontLoader { source: Qt.resolvedUrl("assets/fonts/MaterialSymbolsRounded.ttf") }
 
     Variants {
         model: Quickshell.screens
@@ -59,6 +60,7 @@ ShellRoot {
         function session(): void { Ui.toggle("session"); }
         function wallpapers(): void { Ui.closeAll(); Ui.wallpick = true; }
         function lock(): void { Ui.lock(); }
+        function ws(n: int): void { Hyprland.dispatch("workspace " + n); }
         function edit(): void { Ui.editing = !Ui.editing; }
         function close(): void { Ui.closeAll(); Ui.settings = false; }
         function set(path: string, value: string): void { let v = value; try { v = JSON.parse(value); } catch (e) {} Config.set(path, v); }

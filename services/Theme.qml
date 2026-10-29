@@ -19,24 +19,30 @@ Singleton {
     ColorQuantizer {
         id: quant
         source: Config.data.wall.path ? "file://" + Config.data.wall.path : ""
-        depth: 4
-        rescaleSize: 96
+        depth: 6
+        rescaleSize: 192
     }
+    // the prototype's wallSeeds(): a hue histogram (72 bins of 5 degrees)
+    // weighted by chroma^1.5, smoothed, its peaks at least 35 degrees apart.
+    // (Median cut gives buckets of about equal population: each of the 64
+    // colours stands for as many pixels.)
     readonly property var wallSeeds: {
-        const cs = quant.colors || [], bins = [];
+        const cs = quant.colors || [], bins = new Array(72).fill(0), hsum = new Array(72).fill(0), csum = new Array(72).fill(0);
         for (const c of cs) {
             const o = toOklch(c.r, c.g, c.b);
             if (o[1] < .025 || o[0] < .15 || o[0] > .95) continue;
-            bins.push({ h: o[2], c: o[1], w: Math.pow(o[1], 1.5) });
+            const w = Math.pow(o[1], 1.5), bi = Math.floor(o[2] / 5) % 72;
+            bins[bi] += w; hsum[bi] += o[2] * w; csum[bi] += o[1] * w;
         }
-        bins.sort((a, b) => b.w - a.w);
-        const seeds = [];
-        for (const b of bins) {
-            if (seeds.length >= 4) break;
-            if (seeds.some(s => Math.min(Math.abs(s.h - b.h), 360 - Math.abs(s.h - b.h)) < 35)) continue;
-            seeds.push({ h: Math.round(b.h), c: Math.max(.05, Math.min(.2, b.c * 1.1)) });
+        const sm = bins.map((_, k) => bins[(k + 71) % 72] * .5 + bins[k] + bins[(k + 1) % 72] * .5);
+        const order = sm.map((v, k) => k).sort((a, b) => sm[b] - sm[a]), seeds = [];
+        for (const k of order) {
+            if (sm[k] <= 0 || sm[k] < sm[order[0]] * .06 || seeds.length >= 4) break;
+            const h = bins[k] ? hsum[k] / bins[k] : k * 5 + 2.5;
+            if (seeds.some(s => Math.min(Math.abs(s.h - h), 360 - Math.abs(s.h - h)) < 35)) continue;
+            seeds.push({ h: Math.round(h), c: Math.max(.05, Math.min(.2, (csum[k] / (bins[k] || 1)) * 1.1)) });
         }
-        return seeds.length ? seeds : [{ h: 285, c: .03 }];
+        return seeds.length ? seeds : [{ h: 285, c: .02 }];
     }
 
     // what is in force: a saved theme, the wallpaper's seed, or a chosen hue
@@ -94,7 +100,7 @@ Singleton {
     readonly property real r: 32 * radiusScale       // --R
     readonly property real rm: 24 * radiusScale      // --Rm
     readonly property real rs: 16 * radiusScale      // --Rs
-    readonly property string font: "Roboto Flex"
+    readonly property string font: th.font || "Roboto Flex"
     readonly property string icons: "Material Symbols Rounded"
     readonly property bool still: th.motion === "off"
     // cubic-bezier(.34, 1.56, .64, 1) and friends, for Easing.BezierSpline

@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Effects
 import qs.components
 import qs.services
 
@@ -14,22 +15,24 @@ Item {
 
     visible: opacity > 0.01
     opacity: shown ? 1 : 0
-    scale: shown ? 1 : .92
+    scale: shown ? 1 : .94
     transformOrigin: origin === "top" ? Item.Top : origin === "bottom" ? Item.Bottom : origin === "left" ? Item.Left : Item.Right
     Behavior on opacity { SmoothAnim { ms: 220 } }
-    Behavior on scale { SpringAnim { ms: 420 } }
+    Behavior on scale { SpringAnim { ms: 500 } }
 
+    transform: Translate {
+        x: root.shown ? 0 : root.origin === "left" ? -14 : root.origin === "right" ? 14 : 0
+        y: root.shown ? 0 : root.origin === "top" ? -14 : root.origin === "bottom" ? 14 : 0
+        Behavior on x { SpringAnim { ms: 500 } }
+        Behavior on y { SpringAnim { ms: 500 } }
+    }
+    RectangularShadow { anchors.fill: parent; radius: Theme.r; blur: 80; spread: -24; offset.y: 24; color: Theme.shadow }
     Rectangle {
         anchors.fill: parent
         radius: Theme.r
         color: Theme.surfaceLow
-        Behavior on color { ColorAnim {} }
-        Rectangle {
-            // a soft shadow under it
-            anchors.fill: parent; anchors.topMargin: 14; anchors.margins: -2
-            z: -1; radius: parent.radius
-            color: Theme.alpha(Theme.shadow, .35)
-        }
+        border.width: 1; border.color: Theme.alpha(Theme.fgSurface, .06)
+        Behavior on color { ColorAnim { ms: 900 } }
     }
     MouseArea { anchors.fill: parent; onWheel: w => w.accepted = true }
     Item {

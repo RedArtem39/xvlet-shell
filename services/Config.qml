@@ -14,14 +14,14 @@ Singleton {
     readonly property string dir: Quickshell.env("HOME") + "/.config/xvlet"
     readonly property var defaults: ({
         theme: { mode: "dark", src: "wall", seed: 0, custom: 285, scheme: "tonal", saved: [], active: -1,
-                 radius: 1, motion: "spring", shellCorners: true },
-        wall: { path: "/usr/share/wynland/wallpapers/peaks.png", trans: "circle" },
+                 radius: 1, motion: "spring", font: "Roboto Flex", shellCorners: true, screenCorners: false },
+        wall: { path: Qt.resolvedUrl("../assets/walls/01-dusk.png").toString().replace("file://", ""), trans: "circle" },
         bar: { pos: "top", style: "islands", height: 52, ws: "pill", clock: "date",
                mods: { logo: "start", ws: "start", tasks: "off", media: "center", tray: "end", sysmon: "off",
                        weather: "end", status: "end", bell: "end", clock: "end", power: "end" } },
-        dock: { on: true, style: "attached", pos: "bottom", size: 52, zoom: 1.15, labels: false, inds: true, autohide: "smart",
+        dock: { on: true, style: "attached", pos: "bottom", size: 52, zoom: 1.15, labels: false, inds: true, autohide: "off",
                 apps: ["wynland-terminal", "wynland-files", "wynland-web", "foot"] },
-        launcher: { pos: "bottom", view: "grid" },
+        launcher: { pos: "bottom", view: "grid", cats: true },
         desk: { grid: true, note: "", widgets: [
             { t: "clock", v: "lumen", x: 1608, y: 96, w: 264, h: 264 }, { t: "weather", v: "full", x: 1536, y: 384, w: 336, h: 216 },
             { t: "music", v: "vinyl", x: 72, y: 96, w: 312, h: 312 }, { t: "cpu", v: "wave", x: 1392, y: 744, w: 144, h: 144 },

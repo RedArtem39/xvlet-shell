@@ -9,6 +9,15 @@ Shape {
 
     property var shape: Theme.shCircle
     property color color: Theme.primary
+    // a diagonal gradient instead of the colour (135deg, as the prototype's
+    // covers): three colours
+    property var grad: []
+    property LinearGradient lg: LinearGradient {
+        x1: 0; y1: 0; x2: root.width; y2: root.height
+        GradientStop { position: 0; color: root.grad[0] || root.color }
+        GradientStop { position: .5; color: root.grad[1] || root.color }
+        GradientStop { position: 1; color: root.grad[2] || root.grad[1] || root.color }
+    }
     property int morphMs: 600
 
     property var _from: shape
@@ -40,6 +49,7 @@ Shape {
     ShapePath {
         strokeWidth: -1
         fillColor: root.color
+        fillGradient: root.grad.length ? root.lg : null
         PathPolyline { path: root._pts }
     }
 }

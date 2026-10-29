@@ -15,7 +15,7 @@ Singleton {
     property real popX: 0            // where the bar's button is (the popout comes from there)
     property bool launcher: false
     property bool settings: false
-    property string settingsPage: "look"
+    property string settingsPage: "styles"
     property bool wallpick: false
     property bool locked: false
     property bool editing: false

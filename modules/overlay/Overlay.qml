@@ -54,5 +54,5 @@ PanelWindow {
     Session { anchors.fill: parent; shown: Ui.pop === "session" }
     Launcher { anchors.fill: parent; shown: Ui.launcher }
     WallPicker { anchors.fill: parent; shown: Ui.wallpick }
-    Settings { anchors.centerIn: parent; shown: Ui.settings }
+    Settings { anchors.horizontalCenter: parent.horizontalCenter; y: 110; shown: Ui.settings }
 }
