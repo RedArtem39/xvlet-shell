@@ -63,7 +63,7 @@ Item {
                     MShape {
                         width: 36; height: 36
                         shape: Theme.shCookie9; color: Theme.primary
-                        MIcon { anchors.centerIn: parent; text: "auto_awesome"; fill: true; size: 18; color: Theme.fgPrimary }
+                        XvletMark { anchors.centerIn: parent; width: 24; height: 24; ink: Theme.fgPrimary; cut: Theme.primary }
                     }
                     Label { text: "Настройки"; size: 20; w: 750; font.letterSpacing: -.2; anchors.verticalCenter: parent.verticalCenter }
                 }
@@ -760,7 +760,17 @@ Item {
                             width: 110; height: 110
                             shape: Theme.shCookie9; color: Theme.primary
                             RotationAnimation on rotation { from: 0; to: 360; duration: 40000; loops: Animation.Infinite; running: root.shown && !Theme.still }
-                            MIcon { anchors.centerIn: parent; text: "auto_awesome"; fill: true; size: 56; color: Theme.fgPrimary; rotation: -bigl.rotation }
+                            XvletMark {
+                                anchors.centerIn: parent; width: 70; height: 70; rotation: -bigl.rotation
+                                ink: Theme.fgPrimary; cut: Theme.primary
+                                // the pearl turns, the dragon breathes
+                                NumberAnimation on pearlTurn { from: 0; to: 360; duration: 9000; loops: Animation.Infinite; running: root.shown && !Theme.still }
+                                SequentialAnimation on bodyScale {
+                                    running: root.shown && !Theme.still; loops: Animation.Infinite
+                                    NumberAnimation { to: 1.03; duration: 1800; easing.type: Easing.InOutSine }
+                                    NumberAnimation { to: 1; duration: 1800; easing.type: Easing.InOutSine }
+                                }
+                            }
                         }
                         Column { anchors.verticalCenter: parent.verticalCenter
                             Label { text: "xvlet"; size: 32; w: 750; font.letterSpacing: -.6 }
