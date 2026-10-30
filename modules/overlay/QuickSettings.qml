@@ -10,6 +10,15 @@ Popout {
     width: 440
     height: Math.min(820, col.implicitHeight + 36)
 
+    // the parts come in one after another as it opens
+    onShownChanged: if (shown) for (const r of [q1, q2, q3, q4, q5, q6]) r.restart()
+    Rise { id: q1; target: qHead; index: 0 }
+    Rise { id: q2; target: qTiles; index: 1 }
+    Rise { id: q3; target: qSliders; index: 2 }
+    Rise { id: q4; target: qCentreHead; index: 3 }
+    Rise { id: q5; target: qEmpty; index: 4 }
+    Rise { id: q6; target: nl; index: 4 }
+
     Column {
         id: col
         width: parent.width
@@ -17,6 +26,7 @@ Popout {
 
         // the head: the battery, the theme, the settings
         Item {
+            id: qHead
             width: parent.width; height: 44
             Row {
                 x: 4; anchors.verticalCenter: parent.verticalCenter; spacing: 10
@@ -31,6 +41,7 @@ Popout {
         }
 
         Grid {
+            id: qTiles
             width: parent.width
             columns: 2
             spacing: 8
@@ -44,6 +55,7 @@ Popout {
 
         // the volume, the brightness
         Card {
+            id: qSliders
             width: parent.width; height: sl.implicitHeight + 20
             Column {
                 id: sl
@@ -61,6 +73,7 @@ Popout {
 
         // the centre
         Item {
+            id: qCentreHead
             width: parent.width; height: 42
             Label { x: 4; text: "Уведомления"; size: 15; w: 700; anchors.verticalCenter: parent.verticalCenter; anchors.verticalCenterOffset: 3 }
             Rectangle {
@@ -78,6 +91,7 @@ Popout {
             }
         }
         Column {
+            id: qEmpty
             visible: Notifs.list.length === 0
             width: parent.width
             topPadding: 30; bottomPadding: 22; spacing: 10

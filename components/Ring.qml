@@ -19,7 +19,8 @@ Canvas {
     onPhaseChanged: requestPaint()
     Behavior on shown { NumberAnimation { duration: Theme.ms(800); easing.type: Easing.OutQuint } }
     Binding on shown { value: root.value }
-    NumberAnimation on phase { from: 0; to: Math.PI * 2; duration: 2200; loops: Animation.Infinite; running: root.visible && !Theme.still }
+    // the wave: 20 frames a second (each one a repaint of the canvas)
+    Timer { interval: 50; repeat: true; running: root.visible && !Theme.still; onTriggered: root.phase = (root.phase + Math.PI * 2 * 50 / 2200) % (Math.PI * 2) }
 
     onPaint: {
         const g = getContext("2d"), W = Math.min(width, height), c = W / 2, R = W * .37;

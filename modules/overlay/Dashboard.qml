@@ -18,7 +18,23 @@ Popout {
         path: "/proc/uptime"
         onLoaded: t => { const x = parseFloat(t), h = Math.floor(x / 3600), m = Math.floor(x % 3600 / 60); root.uptime = (h ? h + " ч " : "") + m + " мин"; }
     }
-    onShownChanged: if (shown) up.reload()
+    onShownChanged: if (shown) { up.reload(); rise(); }
+
+    // the cards of the tab on show come in one after another (opening,
+    // or another tab)
+    readonly property var rises: ({ ov: [r1, r2, r3, r4], md: [r5], pf: [r6, r7, r8, r9, r10] })
+    function rise() { for (const r of rises[Ui.dashTab] || []) r.restart(); }
+    Connections { target: Ui; function onDashTabChanged() { if (root.shown) root.rise(); } }
+    Rise { id: r1; target: rUser; index: 0 }
+    Rise { id: r2; target: wcard; index: 1 }
+    Rise { id: r3; target: rCal; index: 2 }
+    Rise { id: r4; target: rMedia; index: 3 }
+    Rise { id: r5; target: md; index: 0 }
+    Rise { id: r6; target: g1; index: 0 }
+    Rise { id: r7; target: g2; index: 1 }
+    Rise { id: r8; target: g3; index: 2 }
+    Rise { id: r9; target: g4; index: 3 }
+    Rise { id: r10; target: rGraph; index: 4 }
 
     // the tabs: a connected group, the chosen one round
     Row {
@@ -70,6 +86,7 @@ Popout {
             spacing: 10
             // the user
             Card {
+                id: rUser
                 width: 300; height: Math.max(prof.implicitHeight, wth.implicitHeight) + 36
                 Row {
                     id: prof
@@ -143,11 +160,13 @@ Popout {
             }
             // the month
             Card {
+                id: rCal
                 width: 300; height: Math.max(cal.implicitHeight, 280) + 36
                 Calendar { id: cal; x: 18; y: 18; width: parent.width - 36 }
             }
             // what plays
             Card {
+                id: rMedia
                 width: ov.width - 310; height: Math.max(cal.implicitHeight, 280) + 36
                 MediaCard { x: 18; width: parent.width - 36; anchors.verticalCenter: parent.verticalCenter; art: 132 }
             }
@@ -169,12 +188,13 @@ Popout {
             width: parent.width
             spacing: 10
             Row { spacing: 10
-            Gauge { name: "Процессор"; sub: Sys.cores + " ядер"; v: Sys.cpu }
-            Gauge { name: "Память"; sub: Sys.ramUsedGb.toFixed(1).replace(".", ",") + " из " + Sys.ramTotalGb.toFixed(0) + " ГБ"; v: Sys.ram }
-            Gauge { name: "Диск"; sub: Sys.diskText || "—"; v: Sys.disk }
-            Gauge { name: "Температура"; sub: Sys.temp >= 0 ? "процессор" : "датчика нет"; v: Sys.temp >= 0 ? Sys.temp / 100 : 0; label: Sys.temp >= 0 ? Math.round(Sys.temp) + "°" : "нет" }
+            Gauge { id: g1; name: "Процессор"; sub: Sys.cores + " ядер"; v: Sys.cpu }
+            Gauge { id: g2; name: "Память"; sub: Sys.ramUsedGb.toFixed(1).replace(".", ",") + " из " + Sys.ramTotalGb.toFixed(0) + " ГБ"; v: Sys.ram }
+            Gauge { id: g3; name: "Диск"; sub: Sys.diskText || "—"; v: Sys.disk }
+            Gauge { id: g4; name: "Температура"; sub: Sys.temp >= 0 ? "процессор" : "датчика нет"; v: Sys.temp >= 0 ? Sys.temp / 100 : 0; label: Sys.temp >= 0 ? Math.round(Sys.temp) + "°" : "нет" }
             }
             Card {
+                id: rGraph
                 width: pf.width; height: 126
                 Row {
                     x: 18; anchors.verticalCenter: parent.verticalCenter; spacing: 18

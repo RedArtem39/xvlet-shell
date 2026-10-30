@@ -18,7 +18,8 @@ Canvas {
     implicitHeight: 28
     Behavior on amp { NumberAnimation { duration: Theme.ms(500) } }
     Binding on amp { value: root.waving && !root.dragging ? 3 : 0 }
-    NumberAnimation on phase { from: 0; to: Math.PI * 2; duration: 1300; loops: Animation.Infinite; running: root.visible && root.waving && !Theme.still }
+    // the wave: 20 frames a second (each one a repaint of the canvas)
+    Timer { interval: 50; repeat: true; running: root.visible && root.waving && !Theme.still; onTriggered: root.phase = (root.phase + Math.PI * 2 * 50 / 1300) % (Math.PI * 2) }
     onPhaseChanged: requestPaint()
     onValueChanged: requestPaint()
     onAmpChanged: requestPaint()
