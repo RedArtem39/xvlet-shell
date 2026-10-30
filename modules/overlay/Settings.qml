@@ -3,6 +3,7 @@ import QtQuick.Effects
 import QtQuick.Shapes
 import Quickshell
 import Quickshell.Io
+import Quickshell.Hyprland
 import qs.components
 import qs.services
 
@@ -717,8 +718,39 @@ Item {
                                 Config.set("desk.widgets", root.cfg.desk.widgets.concat([{ t: wr.modelData, v: f, x: 912 - s[0] / 2 + 48, y: 528 - s[1] / 2, w: s[0], h: s[1] }]));
                             } } } }
             }
+            // Zerp's infinite canvas (Alt+G): kept here, told to Zerp
+            Group {
+                title: "Бесконечный холст"
+                SRow { icon: "grid_on"; title: "Холст на этом столе"; kw: "canvas холст бесконечный Alt+G"
+                    Mini { pri: true; icon: "swap_horiz"; text: "Alt+G"; onClicked: { Ui.settings = false; Hyprland.dispatch("togglecanvas"); } } }
+                SRow { icon: "add_to_photos"; title: "Новые столы — холстом"; kw: "canvas холст"
+                    Toggle { checked: !!root.cfg.canvas.def; onToggled: v => root.canvasSet("def", v) } }
+                SRow { icon: "open_in_new"; title: "Новые окна"; kw: "canvas холст окна рядом центр курсор"
+                    Seg { model: [{ k: "beside", n: "Рядом" }, { k: "center", n: "По центру" }, { k: "cursor", n: "Под курсором" }]; value: root.cfg.canvas.place; onPicked: k => root.canvasSet("place", k) } }
+                SRow { icon: "waves"; title: "Движение"; kw: "canvas холст пружина анимации мягкое"
+                    Seg { model: [{ k: "soft", n: "Мягкое" }, { k: "normal", n: "Обычное" }, { k: "crisp", n: "Чёткое" }]; value: root.cfg.canvas.feel; onPicked: k => root.canvasSet("feel", k) } }
+                SRow { icon: "sports_handball"; title: "Инерция"; kw: "canvas холст бросок"
+                    Toggle { checked: root.cfg.canvas.inertia !== false; onToggled: v => root.canvasSet("inertia", v) } }
+                SRow { icon: "join_inner"; title: "Прилипание"; kw: "canvas холст магнит края"
+                    Toggle { checked: root.cfg.canvas.snap !== false; onToggled: v => root.canvasSet("snap", v) } }
+                SRow { icon: "texture"; title: "Фон холста"; kw: "canvas холст фон точки сетка"
+                    Seg { model: [{ k: "dots", n: "Точки" }, { k: "grid", n: "Сетка" }, { k: "none", n: "Нет" }]; value: root.cfg.canvas.bg; onPicked: k => root.canvasSet("bg", k) } }
+                Item {
+                    width: parent.width; height: keysTxt.implicitHeight + 24
+                    Rectangle { x: 14; anchors.verticalCenter: parent.verticalCenter; width: 40; height: 40; radius: 14; color: Theme.surfaceHigh
+                        MIcon { anchors.centerIn: parent; text: "keyboard"; size: 22; color: Theme.fgSurfaceVar } }
+                    Label {
+                        id: keysTxt
+                        x: 70; anchors.verticalCenter: parent.verticalCenter; width: parent.width - 84
+                        wrapMode: Text.WordWrap; size: 12.5; w: 500; dim: true
+                        text: "Alt+мышь — окно (Shift — с соседями, правая кнопка — размер) · Alt+M развернуть · Alt+C в центр · Alt+A начало и обратно · Alt+W все окна · Ctrl+Alt+Shift+1…4 запомнить место, Ctrl+Alt+1…4 вернуться · Alt+Tab окна"
+                        visible: root.query === ""
+                    }
+                }
+            }
         }
     }
+    function canvasSet(k, v) { Config.set("canvas." + k, v); Hyprland.dispatch("canvas opt " + k + " " + v); }
 
     // ---- Уведомления ----
     Component {

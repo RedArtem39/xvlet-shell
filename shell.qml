@@ -23,6 +23,16 @@ ShellRoot {
     FontLoader { source: Qt.resolvedUrl("assets/fonts/RobotoFlex.ttf") }
     FontLoader { source: Qt.resolvedUrl("assets/fonts/MaterialSymbolsRounded.ttf") }
 
+    // the canvas's settings, to Zerp once the shell's own are read
+    Connections {
+        target: Config
+        function onLoadedChanged() {
+            if (!Config.loaded) return;
+            const c = Config.data.canvas || {};
+            for (const k in c) Hyprland.dispatch("canvas opt " + k + " " + c[k]);
+        }
+    }
+
     Variants {
         model: Quickshell.screens
         Scope {

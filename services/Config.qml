@@ -27,7 +27,9 @@ Singleton {
             { t: "music", v: "vinyl", x: 72, y: 96, w: 312, h: 312 }, { t: "cpu", v: "wave", x: 1392, y: 744, w: 144, h: 144 },
             { t: "ram", v: "wave", x: 1560, y: 744, w: 144, h: 144 }, { t: "temp", v: "wave", x: 1728, y: 744, w: 144, h: 144 },
             { t: "clock", v: "digital", x: 72, y: 600, w: 288, h: 312 }] },
-        notif: { pos: "tr", dnd: false, secs: 6 }
+        notif: { pos: "tr", dnd: false, secs: 6 },
+        // Zerp's infinite canvas (told to it: shell.qml, Settings)
+        canvas: { def: false, place: "beside", feel: "soft", inertia: true, snap: true, bg: "dots" }
     })
     property var data: clone(defaults)
     property bool loaded: false
