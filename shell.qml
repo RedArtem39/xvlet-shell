@@ -23,8 +23,9 @@ ShellRoot {
     FontLoader { source: Qt.resolvedUrl("assets/fonts/RobotoFlex.ttf") }
     FontLoader { source: Qt.resolvedUrl("assets/fonts/MaterialSymbolsRounded.ttf") }
 
-    // the sounds: made at start (they load ahead, and hear the network)
-    Component.onCompleted: Sfx.volume
+    // made at start: the sounds (they load ahead, and hear the network),
+    // the wallpapers (a missing default is replaced at once)
+    Component.onCompleted: { Sfx.volume; Walls.list; }
 
     // the canvas's settings, to Zerp once the shell's own are read
     Connections {

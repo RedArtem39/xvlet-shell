@@ -32,6 +32,14 @@ Singleton {
         }
     }
     function refresh() { ls.running = true; }
+    // the shell's own default where the system left them out (an image
+    // with only its owner's pictures): the first wallpaper there is
+    function fallback() {
+        const p = Config.data.wall.path || "";
+        if (Config.loaded && list.length && list.indexOf(p) < 0 && p.indexOf("/assets/walls/") >= 0) set(list[0]);
+    }
+    onListChanged: fallback()
+    Connections { target: Config; function onLoadedChanged() { root.fallback(); } }
     function set(path) { Config.set("wall.path", path); }
     // the shell's own have names (the prototype's), the rest their file's
     readonly property var names: ({ dusk: "Сумерки", mint: "Мята", amber: "Янтарь", ocean: "Океан", sakura: "Сакура", forest: "Лес",
