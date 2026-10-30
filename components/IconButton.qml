@@ -48,6 +48,6 @@ Item {
         anchors.fill: parent
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.RightButton
-        onClicked: e => e.button === Qt.RightButton ? root.rightClicked() : root.clicked()
+        onClicked: e => { Sfx.ui("icon"); e.button === Qt.RightButton ? root.rightClicked() : root.clicked(); }
     }
 }

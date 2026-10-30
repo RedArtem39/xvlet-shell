@@ -136,6 +136,7 @@ Item {
                     selectionColor: Theme.primary; selectedTextColor: Theme.fgPrimary
                     clip: true
                     onTextChanged: root.raw = text
+                    onTextEdited: Sfx.ui("type")
                     Keys.onTabPressed: root.nextMode(false)
                     Keys.onBacktabPressed: root.nextMode(true)
                     Keys.onDownPressed: root.sel = Math.min(root.items.length - 1, root.sel + root.cols)

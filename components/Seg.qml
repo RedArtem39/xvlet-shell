@@ -57,7 +57,7 @@ Row {
                     anchors.verticalCenter: parent.verticalCenter
                 }
             }
-            MouseArea { id: ma; anchors.fill: parent; hoverEnabled: true; onClicked: root.picked(seg.modelData.k) }
+            MouseArea { id: ma; anchors.fill: parent; hoverEnabled: true; onClicked: { Sfx.ui("switch"); root.picked(seg.modelData.k); } }
         }
     }
 }

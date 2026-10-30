@@ -1,0 +1,5 @@
+The sounds in this directory come from Serpantinum by Illia Miroshnichenko
+(github.com/ilyamiro/nixos-configuration, src/assets/sounds), licensed
+under the GNU Affero General Public License v3 or later -- as xvlet is.
+Converted to 16-bit PCM WAV at 48 kHz (Qt's SoundEffect plays WAV only);
+otherwise unchanged. The intro/tutorial sounds were not taken.

@@ -64,7 +64,7 @@ Item {
                         id: bm
                         anchors.fill: parent; hoverEnabled: true
                         onEntered: root.sel = b.index
-                        onClicked: { Ui.closeAll(); Power.act(b.modelData.k); }
+                        onClicked: { Sfx.ui("press"); Ui.closeAll(); Power.act(b.modelData.k); }
                     }
                 }
                 Label { text: b.modelData.n; size: 16; w: 650; anchors.horizontalCenter: parent.horizontalCenter; color: Theme.oklch(97, .02, Theme.now.h) }

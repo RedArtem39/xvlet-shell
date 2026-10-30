@@ -10,7 +10,9 @@ import qs.services
 // or a click brings the panel -- its core first (avatar, name, password),
 // then its wings (weather and the system on the left, notifications and
 // music on the right). Unlocking folds the panel away. The password is the
-// account's own, checked by ary --check (WynlandOS). Zerp has no session
+// account's own, checked by the system's helper for lock screens: chkpwd
+// on WynlandOS, PAM's unix_chkpwd elsewhere (same use: the user's name as
+// the argument, the password on stdin ending in a NUL). Zerp has no session
 // lock protocol: this is the top layer with the keyboard held.
 PanelWindow {
     id: root
@@ -43,9 +45,10 @@ PanelWindow {
 
     Process {
         id: check
-        command: ["ary", "--check"]
+        command: ["sh", "-c", "if [ -x /usr/lib/wynland/chkpwd ]; then exec /usr/lib/wynland/chkpwd \"$1\"; fi; " +
+                  "exec \"$(command -v unix_chkpwd || echo /usr/sbin/unix_chkpwd)\" \"$1\" nullok", "chkpwd", Quickshell.env("USER") || ""]
         stdinEnabled: true
-        onStarted: { write(root.pass + "\n"); }
+        onStarted: { write(root.pass + "\u0000"); stdinEnabled = false; }
         onExited: code => {
             if (code === 0) { root.state_ = "unlocking"; root.wings = false; folding.start(); }
             else { root.state_ = "input"; root.bad = true; root.pass = ""; shake.restart(); }
@@ -267,8 +270,8 @@ PanelWindow {
             if (root.state_ === "idle") root.wake();
             idle.restart();
             if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter) root.tryUnlock();
-            else if (e.key === Qt.Key_Backspace) root.pass = root.pass.slice(0, -1);
-            else if (e.text && e.text.length === 1 && e.text.charCodeAt(0) >= 32) { root.pass += e.text; root.bad = false; }
+            else if (e.key === Qt.Key_Backspace) { if (root.pass) Sfx.ui("type"); root.pass = root.pass.slice(0, -1); }
+            else if (e.text && e.text.length === 1 && e.text.charCodeAt(0) >= 32) { root.pass += e.text; root.bad = false; Sfx.ui("type"); }
             e.accepted = true;
         }
         MouseArea { anchors.fill: parent; onClicked: root.wake() }

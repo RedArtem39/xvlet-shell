@@ -195,6 +195,7 @@ PanelWindow {
             hoverEnabled: true
             acceptedButtons: Qt.LeftButton | Qt.RightButton
             onClicked: e => {
+                Sfx.ui("icon");
                 if (di.all) { Ui.openLauncher(); return; }
                 if (e.button === Qt.RightButton) {
                     const apps = root.dcfg.apps.includes(di.app.id) ? root.dcfg.apps.filter(x => x !== di.app.id) : root.dcfg.apps.concat([di.app.id]);

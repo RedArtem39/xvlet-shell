@@ -26,7 +26,7 @@ Singleton {
             n.tracked = true;
             root.arrivals = root.arrivals.filter(a => a.n).concat([{ n: n, t: Date.now() }]);
             root.badge = true;
-            if (!root.dnd || n.urgency === NotificationUrgency.Critical) root.toasts = root.toasts.concat([n]);
+            if (!root.dnd || n.urgency === NotificationUrgency.Critical) { root.toasts = root.toasts.concat([n]); Sfx.notify(n.urgency === NotificationUrgency.Critical); }
         }
     }
     // when each came: "сейчас", "14 мин", "1 ч"
@@ -42,7 +42,7 @@ Singleton {
     function dropToast(n) { toasts = toasts.filter(t => t !== n); }
     function dismiss(n) { dropToast(n); if (n.dismiss) n.dismiss(); }
     // the settings' "Проверить": a toast of our own (no notify-send here)
-    function test(summary, body) { toast("notifications", summary, body); }
+    function test(summary, body) { toast("notifications", summary, body); Sfx.notify(false); }
     function toast(icon, summary, body) { toasts = toasts.concat([{ summary: summary, body: body, appName: "xvlet", actions: [], image: "", appIcon: "", icon: icon }]); }
     function clear() { for (const n of list.slice()) n.dismiss(); toasts = []; }
     // an app's icon for a notification: its image, its app icon, a symbol

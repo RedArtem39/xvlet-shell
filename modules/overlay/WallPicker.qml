@@ -144,7 +144,7 @@ Item {
                     text: Walls.nameOf(card.modelData); size: 15; w: 700; color: "white"
                     style: Text.Raised; styleColor: Qt.rgba(0, 0, 0, .4)
                 }
-                MouseArea { anchors.fill: parent; onClicked: { if (card.isCur) root.apply(); else root.cur = card.index; } }
+                MouseArea { anchors.fill: parent; onClicked: { Sfx.ui(card.isCur ? "press" : "click"); if (card.isCur) root.apply(); else root.cur = card.index; } }
             }
         }
         Label { visible: root.list.length === 0; anchors.centerIn: parent; text: "Нет обоев этого цвета"; size: 15; w: 600; color: "white" }

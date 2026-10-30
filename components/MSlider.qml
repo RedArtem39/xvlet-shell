@@ -63,11 +63,18 @@ Item {
         MouseArea {
             anchors.fill: parent
             enabled: root.enabled
-            function at(x) { root.moved(Math.max(0, Math.min(1, x / box.width))); }
+            // a tick for every step of 5 % passed (as Serpantinum's draggables)
+            property int step: -1
+            function at(x) {
+                const v = Math.max(0, Math.min(1, x / box.width)), s = Math.round(v * 20);
+                if (s !== step) { if (step >= 0) Sfx.ui("tick"); step = s; }
+                root.moved(v);
+            }
+            onReleased: step = -1
             onPressed: e => at(e.x)
             onPositionChanged: e => { if (pressed) at(e.x); }
         }
-        WheelHandler { enabled: root.enabled; onWheel: e => root.moved(Math.max(0, Math.min(1, root.value + (e.angleDelta.y > 0 ? .05 : -.05)))) }
+        WheelHandler { enabled: root.enabled; onWheel: e => { Sfx.ui("tick"); root.moved(Math.max(0, Math.min(1, root.value + (e.angleDelta.y > 0 ? .05 : -.05)))); } }
     }
     Label {
         visible: root.showValue

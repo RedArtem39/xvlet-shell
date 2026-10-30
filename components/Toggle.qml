@@ -33,6 +33,6 @@ Item {
         id: area
         anchors.fill: parent
         enabled: root.enabled
-        onClicked: { root.checked = !root.checked; root.toggled(root.checked); }
+        onClicked: { root.checked = !root.checked; Sfx.ui("toggle"); root.toggled(root.checked); }
     }
 }

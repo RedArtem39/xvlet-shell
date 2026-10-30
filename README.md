@@ -28,4 +28,19 @@ from `/usr/share/xvlet`.
 ## Fonts
 
 `assets/fonts/RobotoFlex.ttf` -- Roboto Flex, SIL Open Font License 1.1 (`assets/fonts/OFL.txt`).
-The icons are Material Symbols Rounded (the system's).
+The icons are Material Symbols Rounded (`assets/fonts/MaterialSymbolsRounded.ttf`, Apache 2.0).
+
+## Sounds
+
+`assets/sounds/` -- from Serpantinum by Illia Miroshnichenko (AGPL-3.0-or-later), see
+`assets/sounds/CREDITS`. They play through Qt Multimedia; without it only the event sounds
+(notifications, the network) play, through `pw-play`.
+
+## Login screen
+
+`wynlogin/Greeter.qml` -- xvlet's skin for WynlandOS's login screen (wynlogin): installed as
+`/usr/share/wynlogin/themes/xvlet/`, chosen with `theme = xvlet` in `/etc/wynland/login.conf`.
+
+## License
+
+GNU Affero General Public License v3.0 or later (`LICENSE`).

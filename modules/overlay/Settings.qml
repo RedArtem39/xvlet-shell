@@ -28,7 +28,8 @@ Item {
         { k: "styles", n: "Стили", i: "auto_awesome_mosaic" }, { k: "look", n: "Оформление", i: "palette" },
         { k: "bar", n: "Панель", i: "toolbar" }, { k: "dock", n: "Док", i: "dock_to_bottom" },
         { k: "launcher", n: "Лаунчер", i: "apps" }, { k: "desk", n: "Рабочий стол", i: "widgets" },
-        { k: "notif", n: "Уведомления", i: "notifications" }, { k: "about", n: "О системе", i: "info" }
+        { k: "notif", n: "Уведомления", i: "notifications" }, { k: "sound", n: "Звук", i: "volume_up" },
+        { k: "about", n: "О системе", i: "info" }
     ]
     readonly property var cfg: Config.data
     readonly property string query: q.text.trim().toLowerCase()
@@ -105,7 +106,7 @@ Item {
                             MIcon { text: pg.modelData.i; fill: pg.on; size: 22; color: lb.color }
                             Label { id: lb; text: pg.modelData.n; size: 14.5; w: 600; color: pg.on ? Theme.fgSecondaryContainer : Theme.fgSurfaceVar; anchors.verticalCenter: parent.verticalCenter }
                         }
-                        MouseArea { id: pm; anchors.fill: parent; hoverEnabled: true; onClicked: { q.text = ""; Ui.settingsPage = pg.modelData.k; } }
+                        MouseArea { id: pm; anchors.fill: parent; hoverEnabled: true; onClicked: { Sfx.ui("click"); q.text = ""; Ui.settingsPage = pg.modelData.k; } }
                     }
                 }
             }
@@ -142,7 +143,7 @@ Item {
     }
     IconButton { anchors.right: parent.right; anchors.top: parent.top; anchors.margins: 16; icon: "close"; onClicked: Ui.settings = false }
 
-    function pageOf(k) { return ({ styles: styles, look: look, bar: bar, dock: dock, launcher: launcher, desk: desk, notif: notif, about: about })[k] || null; }
+    function pageOf(k) { return ({ styles: styles, look: look, bar: bar, dock: dock, launcher: launcher, desk: desk, notif: notif, sound: sound, about: about })[k] || null; }
 
     // ---- the pieces (shell.css: .sgroup, .srow, .seg, .switch, .srange, .mini, .posmap) ----
     component Group: Rectangle {
@@ -215,7 +216,7 @@ Item {
             MIcon { text: mb.icon; size: 18; visible: mb.icon !== ""; color: mbl.color; anchors.verticalCenter: parent.verticalCenter }
             Label { id: mbl; text: mb.text; size: 13; w: 650; color: mb.pri ? Theme.fgPrimary : Theme.fgSurfaceVar; anchors.verticalCenter: parent.verticalCenter }
         }
-        MouseArea { id: mbm; anchors.fill: parent; hoverEnabled: true; onClicked: mb.clicked() }
+        MouseArea { id: mbm; anchors.fill: parent; hoverEnabled: true; onClicked: { Sfx.ui("click"); mb.clicked(); } }
     }
     component Range: MSlider {
         property string path
@@ -226,7 +227,7 @@ Item {
         readonly property real cur: Config.get(path)
         width: 280; thin: true
         value: (cur - lo) / (hi - lo)
-        valueText: (Math.round(cur * 100) / 100).toLocaleString(Qt.locale("ru_RU"), "f", step < 1 ? 2 : 0).replace(/[,.]?0+$/, "") + unit
+        valueText: (Math.round(cur * 100) / 100).toLocaleString(Qt.locale("ru_RU"), "f", step < 1 ? 2 : 0).replace(/([,.]\d*?)0+$/, "$1").replace(/[,.]$/, "") + unit
         valueWidth: 50
         onMoved: v => Config.set(path, Math.round((lo + v * (hi - lo)) / step) * step)
     }
@@ -262,7 +263,7 @@ Item {
                 color: on ? Theme.primary : Theme.outline
                 opacity: on ? 1 : pbm.containsMouse ? .8 : .45
                 Behavior on opacity { NumberAnimation { duration: 200 } }
-                MouseArea { id: pbm; anchors.fill: parent; anchors.margins: -3; hoverEnabled: true; onClicked: Config.set(pmap.path, pb.modelData) }
+                MouseArea { id: pbm; anchors.fill: parent; anchors.margins: -3; hoverEnabled: true; onClicked: { Sfx.ui("switch"); Config.set(pmap.path, pb.modelData); } }
             }
         }
     }
@@ -766,6 +767,39 @@ Item {
                     Range { path: "notif.secs"; lo: 3; hi: 12; step: 1; unit: " с" } }
                 SRow { icon: "science"; title: "Проверить"; kw: "Показать тестовое уведомление"
                     Mini { icon: "notifications"; text: "Показать"; onClicked: Notifs.test("Тестовое уведомление", "Вот так оно выглядит и вот здесь появляется.") } }
+            }
+        }
+    }
+
+    // ---- Звук ----
+    Component {
+        id: sound
+        Column {
+            spacing: 12
+            Group {
+                title: "Звуки оболочки"
+                SRow { icon: "touch_app"; title: "Звуки интерфейса"; kw: "Щелчки кнопок, переключатели, ползунки, набор текста"
+                    Sw { path: "sound.ui" } }
+                SRow { icon: "campaign"; title: "Звуки событий"; kw: "Уведомления, сеть подключена или пропала"
+                    Sw { path: "sound.events" } }
+                SRow { icon: "volume_up"; title: "Громкость"; kw: "Громкость звуков оболочки (не музыки)"
+                    Range { path: "sound.volume"; lo: 0; hi: 100; step: 5; unit: " %" } }
+            }
+            Group {
+                title: "Звук уведомления"
+                Flow {
+                    width: parent.width; spacing: 8; padding: 12
+                    Repeater {
+                        model: Sfx.notifSounds.concat(["off"])
+                        Mini {
+                            required property string modelData
+                            pri: (root.cfg.sound || {}).notif === modelData
+                            icon: modelData === "off" ? "volume_off" : "music_note"
+                            text: modelData === "off" ? "Без звука" : modelData
+                            onClicked: { Config.set("sound.notif", modelData); Sfx.preview(modelData); }
+                        }
+                    }
+                }
             }
         }
     }

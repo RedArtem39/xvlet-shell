@@ -174,6 +174,6 @@ Popout {
                 Label { text: t.sub; size: 12; w: 550; topPadding: 2; color: t.on ? Theme.fgPrimaryContainer : Theme.fgSurfaceVar; opacity: t.on ? .8 : 1 }
             }
         }
-        MouseArea { id: tm2; anchors.fill: parent; hoverEnabled: true; enabled: !t.dis; onClicked: t.clicked() }
+        MouseArea { id: tm2; anchors.fill: parent; hoverEnabled: true; enabled: !t.dis; onClicked: { Sfx.ui("quick"); t.clicked(); } }
     }
 }

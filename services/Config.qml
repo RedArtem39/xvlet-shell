@@ -28,6 +28,8 @@ Singleton {
             { t: "ram", v: "wave", x: 1560, y: 744, w: 144, h: 144 }, { t: "temp", v: "wave", x: 1728, y: 744, w: 144, h: 144 },
             { t: "clock", v: "digital", x: 72, y: 600, w: 288, h: 312 }] },
         notif: { pos: "tr", dnd: false, secs: 6 },
+        // the sounds (services/Sfx.qml): the interface's, the events', how loud, the notification's
+        sound: { ui: true, events: true, volume: 70, notif: "Progress" },
         // Zerp's infinite canvas (told to it: shell.qml, Settings)
         canvas: { def: false, place: "beside", feel: "soft", inertia: true, snap: true, bg: "dots" }
     })

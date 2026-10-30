@@ -66,7 +66,7 @@ Popout {
                     MIcon { text: tab.modelData.i; size: 20; color: tl.color }
                     Label { id: tl; text: tab.modelData.n; size: 14; w: 650; color: tab.on ? Theme.fgSecondaryContainer : Theme.fgSurfaceVar; anchors.verticalCenter: parent.verticalCenter }
                 }
-                MouseArea { id: ma; anchors.fill: parent; hoverEnabled: true; onClicked: Ui.dashTab = tab.modelData.k }
+                MouseArea { id: ma; anchors.fill: parent; hoverEnabled: true; onClicked: { if (Ui.dashTab !== tab.modelData.k) Sfx.ui("switch"); Ui.dashTab = tab.modelData.k; } }
             }
         }
     }
