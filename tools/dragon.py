@@ -1,43 +1,49 @@
-# xvlet's mark: a Chinese dragon coiled into a spiral round a pearl.
-# One colour (currentColor), details cut out as negative space, every part
-# in its own group (body, fins, belly, head, whiskers, pearl) to animate.
+# xvlet's mark: a Chinese dragon curled into a ring -- its body goes round
+# a few times, wandering in and out, over and under itself (a gap where it
+# crosses), its pearl in the hole. One colour and its cuts.
+#
+#   python tools/dragon.py assets/brand/xvlet.svg components/XvletMark.qml
+#
+# The body is drawn in pieces, each over the ones before it: a piece's
+# sides get a stroke of the cut colour first, so where it lies over an
+# earlier one there is a gap -- the over/under of a knot.
 import math, sys
 
-S = 512                     # the viewBox
-C = S / 2                   # the spiral's centre
-TH0, TH1 = 1.3 * math.pi, 4.25 * math.pi   # the tail (inside) to the neck (outside)
-B = 11.0                    # r = A + B * theta: coils 69 apart
-A = 168 - B * TH1
+S = 512
+C = S / 2
+TURNS = 1.8                       # how many times round the ring
+N = 520                           # samples along the body
+PIECES = 14
 
-def centre(t):
-    r = A + B * t
+def centre(u):
+    # u 0..1 from the tail to the neck: round the ring, the radius
+    # wandering (two waves out of step: no two loops alike)
+    t = u * TURNS * 2 * math.pi + .4
+    r = 150 + 46 * math.sin(2.35 * t + .7) + 22 * math.sin(4.2 * t + 2.1) - 18 * (1 - u)
     return (C + r * math.cos(t), C + r * math.sin(t))
 
-def tangent(t, h=1e-3):
-    (x0, y0), (x1, y1) = centre(t - h), centre(t + h)
-    d = math.hypot(x1 - x0, y1 - y0)
+def tangent(u, h=1e-4):
+    (x0, y0), (x1, y1) = centre(max(0, u - h)), centre(min(1, u + h))
+    d = math.hypot(x1 - x0, y1 - y0) or 1
     return ((x1 - x0) / d, (y1 - y0) / d)
 
-def width(t):
-    # thin at the tail, swelling to the neck, a little narrower at the throat
-    u = (t - TH0) / (TH1 - TH0)
-    return 5 + 46 * math.sin(min(1, u * 1.05) * math.pi * .5) ** 1.3 - 4 * max(0, u - .92) / .08
+def width(u):
+    # a thin tail swelling to the shoulders, narrowing a little at the neck
+    return 4 + 44 * math.sin(min(1, u * 1.25) * math.pi * .5) ** 1.4 - 8 * max(0, u - .88) / .12
 
-N = 220
-ts = [TH0 + (TH1 - TH0) * i / (N - 1) for i in range(N)]
+us = [i / (N - 1) for i in range(N)]
 
-def side(sign):
+def side(i0, i1, sign):
     pts = []
-    for t in ts:
-        (x, y), (tx, ty) = centre(t), tangent(t)
+    for u in us[i0:i1 + 1]:
+        (x, y), (tx, ty) = centre(u), tangent(u)
         nx, ny = -ty * sign, tx * sign
-        w = width(t) / 2
+        w = width(u) / 2
         pts.append((x + nx * w, y + ny * w))
     return pts
 
-def smooth(pts, closed=False):
-    # Catmull-Rom through the points, as cubic Beziers
-    out = ["M%.1f %.1f" % pts[0]]
+def smooth(pts, move=True):
+    out = ["M%.1f %.1f" % pts[0]] if move else []
     n = len(pts)
     for i in range(n - 1):
         p0 = pts[i - 1] if i > 0 else pts[i]
@@ -48,60 +54,48 @@ def smooth(pts, closed=False):
         out.append("C%.1f %.1f %.1f %.1f %.1f %.1f" % (c1 + c2 + p2))
     return " ".join(out)
 
-outer, inner = side(-1), side(1)
-# the body: one edge out, the round tail tip, the other edge back
-tx, ty = centre(TH0)
-body = smooth(outer) + " L" + smooth(inner[::-1])[1:] + " Z"
+pieces = []
+step = (N - 1) / PIECES
+for k in range(PIECES):
+    i0, i1 = round(k * step), round((k + 1) * step)
+    left, right = side(i0, i1, 1), side(i0, i1, -1)
+    fill = smooth(left) + " L%.1f %.1f " % right[-1] + smooth(right[::-1], False) + " Z"
+    edges = smooth(left) + " " + smooth(right)
+    # fins on the outer side of the ring; scales cut across the back
+    fins, scales = [], []
+    for j in range(i0, i1, 9):
+        u = us[j]
+        if u < .1 or u > .93: continue
+        (x, y), (tx, ty) = centre(u), tangent(u)
+        ox, oy = x - C, y - C
+        d = math.hypot(ox, oy) or 1
+        sgn = 1 if (-ty * ox + tx * oy) > 0 else -1          # the normal that points out
+        nx, ny = -ty * sgn, tx * sgn
+        w = width(u) / 2
+        h = 9 + 15 * u
+        bx, by = x + nx * w * .92, y + ny * w * .92
+        fins.append("M%.1f %.1f Q%.1f %.1f %.1f %.1f Q%.1f %.1f %.1f %.1f Z" % (
+            bx - tx * h * .6, by - ty * h * .6,
+            bx + nx * h * .7 - tx * h * .2, by + ny * h * .7 - ty * h * .2,
+            bx + nx * h - tx * h, by + ny * h - ty * h,
+            bx + nx * h * .4 + tx * h * .1, by + ny * h * .4 + ty * h * .1,
+            bx + tx * h * .4, by + ty * h * .4))
+    for j in range(i0 + 4, i1, 8):
+        u = us[j]
+        if u < .06 or u > .95: continue
+        (x, y), (tx, ty) = centre(u), tangent(u)
+        nx, ny = -ty, tx
+        w = width(u) / 2 * .62
+        s = width(u) * .2
+        scales.append("M%.1f %.1f Q%.1f %.1f %.1f %.1f" % (
+            x + nx * w - tx * s * .3, y + ny * w - ty * s * .3,
+            x + tx * s, y + ty * s,
+            x - nx * w - tx * s * .3, y - ny * w - ty * s * .3))
+    pieces.append({"fill": fill, "edges": edges, "fins": " ".join(fins), "scales": " ".join(scales)})
 
-# the belly: a cut line running along the inner side, in plates
-belly = smooth([(x + (centre(t)[0] - x) * .35, y + (centre(t)[1] - y) * .35) for (x, y), t in zip(inner, ts)][10:-6])
-
-# the fins: flames along the outer edge, growing towards the neck
-fins = []
-for k in range(26):
-    u = .12 + .82 * k / 25
-    t = TH0 + (TH1 - TH0) * u
-    (x, y), (tx_, ty_) = centre(t), tangent(t)
-    nx, ny = ty_, -tx_          # outwards
-    w = width(t) / 2
-    h = 6 + 13 * u
-    bx, by = x + nx * w, y + ny * w
-    # a curved flame leaning back along the body
-    p0 = (bx - tx_ * h * .55, by - ty_ * h * .55)
-    p1 = (bx + nx * h - tx_ * h * .9, by + ny * h - ty_ * h * .9)
-    p2 = (bx + tx_ * h * .35, by + ty_ * h * .35)
-    fins.append("M%.1f %.1f Q%.1f %.1f %.1f %.1f Q%.1f %.1f %.1f %.1f Z" % (
-        p0 + ((bx + nx * h * .6 - tx_ * h * .2), (by + ny * h * .6 - ty_ * h * .2)) + p1 +
-        ((bx + nx * h * .45 + tx_ * h * .2), (by + ny * h * .45 + ty_ * h * .2)) + p2))
-
-# the scales: chevrons cut across the back
-scales = []
-for k in range(34):
-    u = .08 + .86 * k / 33
-    t = TH0 + (TH1 - TH0) * u
-    (x, y), (tx_, ty_) = centre(t), tangent(t)
-    nx, ny = ty_, -tx_
-    w = width(t) / 2 * .55
-    s = width(t) * .22
-    scales.append("M%.1f %.1f Q%.1f %.1f %.1f %.1f" % (
-        x + nx * w - tx_ * s * .2, y + ny * w - ty_ * s * .2,
-        x + tx_ * s, y + ty_ * s,
-        x - nx * w * .2 - tx_ * s * .2, y - ny * w * .2 - ty_ * s * .2))
-
-# the head, drawn facing +x with its neck at the origin, then turned along
-# the spiral's end: a long snout, the jaw open towards the pearl, horns,
-# a mane of flames, the eye
-hx, hy = centre(TH1)
-tx_, ty_ = tangent(TH1)
-# (along the coil, a little in: it chases the pearl round)
-ix, iy = C - hx, C - hy
-d = math.hypot(ix, iy); ix, iy = ix / d, iy / d
-ang = math.degrees(math.atan2(ty_ * .85 + iy * .15, tx_ * .85 + ix * .15))
-head = (
-    "M-4 -22 C10 -30 30 -30 46 -24 C58 -20 70 -20 82 -14 C90 -10 92 -4 86 -1 "   # brow, snout top
-    "C78 2 66 0 58 2 L84 10 C88 12 86 18 80 18 C66 18 52 16 40 18 "              # upper jaw, open mouth, lower jaw
-    "C28 20 14 26 -4 22 Z"
-)
+# the head: drawn facing +x, neck at the origin; turned along the body's end
+head = ("M-4 -22 C10 -30 30 -30 46 -24 C58 -20 70 -20 82 -14 C90 -10 92 -4 86 -1 "
+        "C78 2 66 0 58 2 L84 10 C88 12 86 18 80 18 C66 18 52 16 40 18 C28 20 14 26 -4 22 Z")
 mane = ("M-2 -20 C-14 -34 -24 -30 -30 -40 C-20 -38 -12 -40 -4 -30 Z "
         "M-4 20 C-16 32 -26 26 -34 34 C-22 34 -14 32 -6 24 Z "
         "M6 -26 C-4 -46 -18 -48 -22 -60 C-8 -54 4 -50 14 -30 Z")
@@ -112,11 +106,17 @@ nostril = "M74 -10 a3 3 0 1 0 0.1 0 Z"
 teeth = "M60 3 L64 9 L66 4 L70 10 L72 5 L76 11 L78 7 Z"
 whisk = ("M80 -6 C100 -14 120 -6 124 10 C128 26 112 34 104 24 C112 26 118 18 112 10 C104 0 92 0 80 -2 Z "
          "M70 14 C80 30 74 46 60 52 C48 56 40 46 46 40 C46 46 54 48 60 42 C68 34 66 24 62 16 Z")
+hx, hy = centre(1)
+tx, ty = tangent(1)
+ix, iy = C - hx, C - hy
+d = math.hypot(ix, iy); ix, iy = ix / d, iy / d
+ang = math.degrees(math.atan2(ty * .7 + iy * .3, tx * .7 + ix * .3))   # (a little towards the pearl)
+HS = 1.35
 
-# the pearl in the middle, with its flames
-pr = 26
+# the pearl in the hole, with its flames
+pr = 24
 pearl = "M%.1f %.1f a%d %d 0 1 0 0.1 0 Z" % (C, C - pr, pr, pr)
-gleam = "M%.1f %.1f a8 8 0 1 0 0.1 0 Z" % (C - 10, C - 14)
+gleam = "M%.1f %.1f a7 7 0 1 0 0.1 0 Z" % (C - 9, C - 13)
 flames = []
 for k in range(7):
     a = k / 7 * 2 * math.pi + .3
@@ -124,62 +124,59 @@ for k in range(7):
     vx, vy = -uy, ux
     b0 = (C + ux * (pr + 2) - vx * 7, C + uy * (pr + 2) - vy * 7)
     b1 = (C + ux * (pr + 2) + vx * 7, C + uy * (pr + 2) + vy * 7)
-    tip = (C + ux * (pr + 20) + vx * 10, C + uy * (pr + 20) + vy * 10)
+    tip = (C + ux * (pr + 19) + vx * 10, C + uy * (pr + 19) + vy * 10)
     flames.append("M%.1f %.1f Q%.1f %.1f %.1f %.1f Q%.1f %.1f %.1f %.1f Z" % (
-        b0 + (C + ux * (pr + 14) - vx * 2, C + uy * (pr + 14) - vy * 2) + tip +
-        (C + ux * (pr + 10) + vx * 10, C + uy * (pr + 10) + vy * 10) + b1))
+        b0 + (C + ux * (pr + 13) - vx * 2, C + uy * (pr + 13) - vy * 2) + tip +
+        (C + ux * (pr + 9) + vx * 10, C + uy * (pr + 9) + vy * 10) + b1))
 
-cut = 'fill="none" style="stroke:var(--cut, #fff)" stroke-linecap="round" stroke-linejoin="round"'
-svg = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="20 54 530 530" width="{S}" height="{S}">
+GAP = 7     # the cut round a piece where it crosses another
+
+# ---- SVG ----
+ink, cut = "var(--ink, #1b1d24)", "var(--cut, #ffffff)"
+parts = []
+for k, p in enumerate(pieces):
+    parts.append(f'''    <g class="piece">
+      <path d="{p["fins"]}" style="fill:{ink}"/>
+      <path d="{p["edges"]}" style="fill:none;stroke:{cut};stroke-width:{GAP}" stroke-linecap="round"/>
+      <path d="{p["fill"]}" style="fill:{ink}"/>
+      <path d="{p["scales"]}" style="fill:none;stroke:{cut};stroke-width:3" stroke-linecap="round"/>
+    </g>''')
+svg = f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {S} {S}" width="{S}" height="{S}">
   <title>xvlet</title>
-  <!-- xvlet's mark: a Chinese dragon coiled round its pearl. One colour
-       (currentColor, the CSS variable ink); the cuts in the CSS variable cut. Parts:
-       #pearl, #body (#fins, #scales, #belly), #head (#horns, #mane,
-       #whiskers, #eye), each its own group to move. -->
-  <g id="xvlet" fill="currentColor" style="color:var(--ink, #1b1d24)">
-    <g id="pearl">
-      <path d="{pearl}"/>
-      <g id="flames">{"".join(f'<path d="{f}"/>' for f in flames)}</g>
-      <path d="{gleam}" style="fill:var(--cut, #fff)" opacity=".85"/>
-    </g>
-    <g id="body">
-      <g id="fins">{"".join(f'<path d="{f}"/>' for f in fins)}</g>
-      <path id="trunk" d="{body}"/>
-      <g id="scales" {cut} stroke-width="3.2">{"".join(f'<path d="{s_}"/>' for s_ in scales)}</g>
-      <path id="belly" d="{belly}" {cut} stroke-width="2.6" stroke-dasharray="7 6"/>
-    </g>
-    <g id="head" transform="translate({hx:.1f} {hy:.1f}) rotate({ang:.1f}) scale(1.5)">
-      <path id="mane" d="{mane}"/>
-      <path id="horns" d="{horns}"/>
-      <path id="skull" d="{head}"/>
-      <path id="whiskers" d="{whisk}"/>
-      <path id="eye" d="{eye}" style="fill:var(--cut, #fff)"/>
-      <path d="{nostril}" style="fill:var(--cut, #fff)"/>
-      <path d="{teeth}" style="fill:var(--cut, #fff)"/>
-    </g>
+  <!-- xvlet's mark (tools/dragon.py): a Chinese dragon curled into a ring
+       round its pearl. One colour (the CSS variable ink) and its cuts (cut).
+       Parts: #pearl, #body (its .piece groups, tail first), #head. -->
+  <g id="pearl">
+    <path d="{pearl} {" ".join(flames)}" style="fill:{ink}"/>
+    <path d="{gleam}" style="fill:{cut}" opacity=".85"/>
+  </g>
+  <g id="body">
+{chr(10).join(parts)}
+  </g>
+  <g id="head" transform="translate({hx:.1f} {hy:.1f}) rotate({ang:.1f}) scale({HS})">
+    <path d="{mane} {horns} {head} {whisk}" style="fill:{ink};stroke:{cut};stroke-width:{GAP / HS:.1f};paint-order:stroke"/>
+    <path d="{eye} {nostril} {teeth}" style="fill:{cut}"/>
   </g>
 </svg>
 '''
-open(sys.argv[1], "w", encoding="utf-8").write(svg)
-print("ok", len(svg))
+open(sys.argv[1], "w", encoding="utf-8", newline="\n").write(svg)
 
-# the same mark for QML (components/XvletMark.qml): Qt's SVG knows no CSS
-# variables, and as shapes it takes the theme's colours and moves part by part
+# ---- QML (components/XvletMark.qml): Qt's SVG has no CSS variables; as
+# shapes it takes the theme's colours, and its parts move ----
 if len(sys.argv) > 2:
-    J = lambda l: " ".join(l)
-    def fillp(name, d):
-        return f'''        ShapePath {{ objectName: "{name}"; strokeWidth: -1; fillColor: root.ink; PathSvg {{ path: "{d}" }} }}\n'''
-    def cutp(d, w, dash=False):
-        extra = "; strokeStyle: ShapePath.DashLine; dashPattern: [" + str(round(7 / w, 2)) + ", " + str(round(6 / w, 2)) + "]" if dash else ""
-        return f'''        ShapePath {{ strokeWidth: {w}; strokeColor: root.cut; fillColor: "transparent"; capStyle: ShapePath.RoundCap; joinStyle: ShapePath.RoundJoin{extra}; PathSvg {{ path: "{d}" }} }}\n'''
-    def cutf(d):
-        return f'''        ShapePath {{ strokeWidth: -1; fillColor: root.cut; PathSvg {{ path: "{d}" }} }}\n'''
+    def fp(d, colour="root.ink"):
+        return f'            ShapePath {{ strokeWidth: -1; fillColor: {colour}; PathSvg {{ path: "{d}" }} }}\n'
+    def sp(d, w):
+        return (f'            ShapePath {{ strokeWidth: {w}; strokeColor: root.cut; fillColor: "transparent"; '
+                f'capStyle: ShapePath.RoundCap; joinStyle: ShapePath.RoundJoin; PathSvg {{ path: "{d}" }} }}\n')
+    body = "".join(fp(p["fins"]) + sp(p["edges"], GAP) + fp(p["fill"]) + sp(p["scales"], 3) for p in pieces)
     qml = f'''import QtQuick
 import QtQuick.Shapes
 
 // xvlet's mark (generated by tools/dragon.py, as assets/brand/xvlet.svg): a
-// Chinese dragon coiled round its pearl. One colour (ink) and its cuts
-// (cut); the parts move: pearl (spin), body (breathe), head (nod).
+// Chinese dragon curled into a ring round its pearl, over and under
+// itself. One colour (ink) and its cuts (cut: what it sits on). The parts
+// move: the pearl turns, the body breathes, the head nods.
 Item {{
     id: root
     property color ink: "#1b1d24"
@@ -191,34 +188,29 @@ Item {{
     implicitHeight: 64
 
     Item {{
-        // the drawing's own box: 530 square from (20, 54)
-        width: 530; height: 530
-        transform: [ Translate {{ x: -20; y: -54 }}, Scale {{ xScale: root.width / 530; yScale: root.height / 530 }} ]
-        Item {{
+        width: {S}; height: {S}
+        transform: Scale {{ xScale: root.width / {S}; yScale: root.height / {S} }}
+        Shape {{
             id: pearl
-            x: 0; y: 0; width: {S}; height: {S}
+            width: {S}; height: {S}
+            preferredRendererType: Shape.CurveRenderer
             transform: Rotation {{ origin.x: {C}; origin.y: {C}; angle: root.pearlTurn }}
-            Shape {{
-                anchors.fill: parent
-                preferredRendererType: Shape.CurveRenderer
-{fillp("pearl", pearl + " " + J(flames))}{cutf(gleam)}            }}
-        }}
+{fp(pearl + " " + " ".join(flames))}{fp(gleam, "root.cut")}        }}
         Shape {{
             id: body
             width: {S}; height: {S}
             preferredRendererType: Shape.CurveRenderer
             transform: Scale {{ origin.x: {C}; origin.y: {C}; xScale: root.bodyScale; yScale: root.bodyScale }}
-{fillp("fins", J(fins))}{fillp("trunk", body)}{cutp(J(scales), 3.2)}{cutp(belly, 2.6, True)}        }}
-        Item {{
+{body}        }}
+        Shape {{
             id: head
             x: {hx:.1f}; y: {hy:.1f}
-            transform: [ Scale {{ xScale: 1.5; yScale: 1.5 }}, Rotation {{ angle: {ang:.1f} + root.headTurn }} ]
-            Shape {{
-                preferredRendererType: Shape.CurveRenderer
-{fillp("head", J([mane, horns, head, whisk]))}{cutf(J([eye, nostril, teeth]))}            }}
-        }}
+            preferredRendererType: Shape.CurveRenderer
+            transform: [ Scale {{ xScale: {HS}; yScale: {HS} }}, Rotation {{ angle: {ang:.1f} + root.headTurn }} ]
+            ShapePath {{ strokeWidth: {GAP / HS:.1f}; strokeColor: root.cut; fillColor: root.cut; PathSvg {{ path: "{mane} {horns} {head} {whisk}" }} }}
+{fp(mane + " " + horns + " " + head + " " + whisk)}{fp(eye + " " + nostril + " " + teeth, "root.cut")}        }}
     }}
 }}
 '''
-    open(sys.argv[2], "w", encoding="utf-8").write(qml)
-    print("qml ok")
+    open(sys.argv[2], "w", encoding="utf-8", newline="\n").write(qml)
+print("ok")
