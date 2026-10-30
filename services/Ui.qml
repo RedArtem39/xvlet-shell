@@ -2,6 +2,7 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
+import Quickshell.Hyprland
 import qs.services
 
 // What is open: one popout at a time (the dashboard, quick settings, the
@@ -20,6 +21,11 @@ Singleton {
     property bool locked: false
     property bool editing: false
     property string osd: ""          // "volume", "brightness"
+    // the desktop's widgets are seen: no window on this workspace, or the
+    // widgets being edited. Their idle motion (the waves, the clock's second
+    // hand, the sun) runs only then -- a moving widget redraws the whole
+    // desktop layer, and the compositor the whole screen, every frame
+    readonly property bool deskLive: editing || !(Hyprland.focusedWorkspace && Hyprland.focusedWorkspace.toplevels.values.length > 0)
     readonly property bool anyOpen: pop !== "" || launcher || settings || wallpick
 
     function toggle(p, x) { if (pop === p) pop = ""; else { pop = p; if (x !== undefined) popX = x; launcher = false; } }

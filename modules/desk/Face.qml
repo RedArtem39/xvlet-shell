@@ -49,7 +49,8 @@ Item {
             property color pri: Theme.primary
             property color ter: Theme.tertiary
             property color fg: Theme.fgSurface
-            Timer { interval: 100; running: true; repeat: true; onTriggered: { lc.ms = Date.now(); lc.requestPaint(); } }
+            // (a tick a second while the desktop is seen; once a minute behind windows)
+            Timer { interval: Ui.deskLive && !Theme.still ? 1000 : 60000; running: true; repeat: true; triggeredOnStart: true; onTriggered: { lc.ms = Date.now(); lc.requestPaint(); } }
             onPaint: {
                 const g = getContext("2d"), W = width, H = height, S = Math.min(W, H), cx = W / 2, cy = H / 2, now = new Date();
                 g.reset();
@@ -148,7 +149,7 @@ Item {
                 x: root.cq * 7; y: (wfTop.height - height) / 2 + root.cq * 7
                 width: root.cq * 30; height: width; shape: Theme.shSunny
                 color: Weather.ok ? root.sun : Theme.surfaceHighest
-                RotationAnimation on rotation { from: 0; to: 360; duration: 30000; loops: Animation.Infinite; running: Weather.ok && !Theme.still }
+                RotationAnimation on rotation { from: 0; to: 360; duration: 30000; loops: Animation.Infinite; running: Weather.ok && Ui.deskLive && !Theme.still }
                 MIcon { anchors.centerIn: parent; visible: !Weather.ok; text: "cloud_off"; size: parent.width * .45 }
             }
             Column {
@@ -222,7 +223,7 @@ Item {
                 property real tm: 0
                 property color pri: Theme.primary
                 property color ter: Theme.tertiary
-                Timer { interval: 33; running: Media.playing && !Theme.still; repeat: true; onTriggered: { ring.tm = Date.now() / 1000; ring.requestPaint(); } }
+                Timer { interval: 40; running: Media.playing && Ui.deskLive && !Theme.still; repeat: true; onTriggered: { ring.tm = Date.now() / 1000; ring.requestPaint(); } }
                 onPriChanged: requestPaint()
                 Component.onCompleted: requestPaint()
                 onPaint: {
@@ -247,7 +248,7 @@ Item {
                 id: disc
                 anchors.centerIn: parent
                 width: root.cq * 64; height: width
-                RotationAnimation on rotation { from: 0; to: 360; duration: 6000; loops: Animation.Infinite; running: Media.playing && !Theme.still }
+                RotationAnimation on rotation { from: 0; to: 360; duration: 6000; loops: Animation.Infinite; running: Media.playing && Ui.deskLive && !Theme.still }
                 RectangularShadow { anchors.fill: parent; radius: width / 2; blur: root.cq * 12; offset.y: root.cq * 3; spread: -root.cq * 3; color: Qt.rgba(0, 0, 0, .8) }
                 // the grooves: rings of two tones
                 Canvas {
@@ -299,7 +300,8 @@ Item {
         property color onp: Theme.fgPrimary
         property color fg: Theme.fgSurface
         Behavior on shown { NumberAnimation { duration: 800; easing.type: Easing.OutQuint } }
-        Timer { interval: 40; running: !Theme.still; repeat: true; onTriggered: { lq.tm = Date.now() / 1000 + root.t.length; lq.requestPaint(); } }
+        // the wave: 10 frames a second, and only while the desktop is seen
+        Timer { interval: 100; running: Ui.deskLive && !Theme.still; repeat: true; onTriggered: { lq.tm = Date.now() / 1000 + root.t.length; lq.requestPaint(); } }
         onShownChanged: requestPaint()
         onPaint: {
             const g = getContext("2d"), W = width, H = height, val = shown, t = tm;
