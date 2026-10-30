@@ -94,11 +94,17 @@ Item {
                 x: track.width / 2 - width / 2 + (d === 0 ? 0 : Math.sign(d) * (380 + (ad - 1) * 190))
                 z: 100 - ad
                 scale: isCur ? 1.06 : Math.max(.7, 1 - ad * .08)
-                opacity: ad > 4 ? 0 : 1
-                Behavior on x { SpringAnim { ms: 600 } }
+                // far ones: gone, not just clear (they lay over the desktop)
+                visible: ad <= 4
+                opacity: ad > 3 ? 0 : 1
+                // a new card starts where it belongs: it glides only when
+                // the chosen one changes, never in from the left edge
+                property bool placed: false
+                Component.onCompleted: Qt.callLater(() => placed = true)
+                Behavior on x { enabled: card.placed; SpringAnim { ms: 600 } }
                 Behavior on width { SpringAnim { ms: 500 } }
                 Behavior on scale { SpringAnim { ms: 600 } }
-                Behavior on opacity { NumberAnimation { duration: 400 } }
+                Behavior on opacity { enabled: card.placed; NumberAnimation { duration: 400 } }
                 readonly property real dim: isCur ? 0 : 1 - Math.max(.45, 1 - ad * .15)
                 onDimChanged: pic.requestPaint()
                 onWidthChanged: pic.requestPaint()

@@ -17,7 +17,19 @@ Singleton {
         id: ls
         running: true
         command: ["sh", "-c", "for d in \"$0\" /usr/share/wynland/wallpapers \"$HOME/Pictures/Wallpapers\"; do ls -1 \"$d\" 2>/dev/null | grep -iE '\\.(png|jpe?g|webp)$' | sed \"s|^|$d/|\"; done", Qt.resolvedUrl("../assets/walls").toString().replace("file://", "")]
-        stdout: StdioCollector { onStreamFinished: root.list = text.split("\n").filter(l => l.trim() !== "") }
+        // (the same picture in two places -- a link to the system's folder
+        // in ~/Pictures/Wallpapers -- once: by its file name)
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const seen = {};
+                root.list = text.split("\n").filter(l => {
+                    const f = l.trim().split("/").pop();
+                    if (!f || seen[f]) return false;
+                    seen[f] = true;
+                    return true;
+                });
+            }
+        }
     }
     function refresh() { ls.running = true; }
     function set(path) { Config.set("wall.path", path); }
