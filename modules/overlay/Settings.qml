@@ -63,7 +63,7 @@ Item {
                     MShape {
                         width: 36; height: 36
                         shape: Theme.shCookie9; color: Theme.primary
-                        XvletMark { anchors.centerIn: parent; width: 20; height: 20; ink: Theme.fgPrimary }
+                        XvletMark { anchors.centerIn: parent; width: 24; height: 24; ink: Theme.fgPrimary; ink2: Theme.mix(Theme.fgPrimary, Theme.primary, .35); ink3: Theme.mix(Theme.fgPrimary, Theme.primary, .6) }
                     }
                     Label { text: "Настройки"; size: 20; w: 750; font.letterSpacing: -.2; anchors.verticalCenter: parent.verticalCenter }
                 }
@@ -761,13 +761,19 @@ Item {
                             shape: Theme.shCookie9; color: Theme.primary
                             RotationAnimation on rotation { from: 0; to: 360; duration: 40000; loops: Animation.Infinite; running: root.shown && !Theme.still }
                             XvletMark {
-                                anchors.centerIn: parent; width: 60; height: 60; rotation: -bigl.rotation
+                                id: aboutMark
+                                anchors.centerIn: parent; width: 72; height: 72; rotation: -bigl.rotation
                                 ink: Theme.fgPrimary
-                                // the arcs breathe apart and together
-                                SequentialAnimation on spread {
+                                ink2: Theme.mix(Theme.fgPrimary, Theme.primary, .35)
+                                ink3: Theme.mix(Theme.fgPrimary, Theme.primary, .6)
+                                // the shards fly together when the page opens; then the wings breathe
+                                scatter: 1
+                                Component.onCompleted: scatter = 0
+                                Behavior on scatter { NumberAnimation { duration: Theme.ms(1100); easing.type: Easing.OutBack; easing.overshoot: 1.2 } }
+                                SequentialAnimation on flap {
                                     running: root.shown && !Theme.still; loops: Animation.Infinite
-                                    NumberAnimation { to: 30; duration: 1600; easing.type: Easing.InOutSine }
-                                    NumberAnimation { to: 0; duration: 1600; easing.type: Easing.InOutSine }
+                                    NumberAnimation { to: 10; duration: 1400; easing.type: Easing.InOutSine }
+                                    NumberAnimation { to: -4; duration: 1400; easing.type: Easing.InOutSine }
                                 }
                             }
                             }

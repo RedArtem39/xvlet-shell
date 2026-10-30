@@ -1,9 +1,19 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="86.0 106.0 340 340" width="512" height="512">
   <title>xvlet</title>
-  <!-- xvlet's mark (tools/mark.py): an x of two arcs back to back. One
-       colour: currentColor (the CSS variable ink). Parts: #left, #right. -->
-  <g style="fill:none;stroke:var(--ink, currentColor);stroke-width:66;stroke-linecap:round">
-    <path id="left" d="M119.0 82.8 A200 200 0 0 1 119.0 429.2"/>
-    <path id="right" d="M393.0 429.2 A200 200 0 0 1 393.0 82.8"/>
-  </g>
+  <!-- xvlet's mark (tools/mark.py): wings of shards. Three tones (the CSS
+       variables ink, ink2, ink3); every shard a path of its own. -->
+  <path class="wing right" d="M260.0 312.0 L318.0 284.0 L406.0 136.0 Z" style="fill:var(--ink2, #3a3f4c)"/>
+  <path class="wing right" d="M260.0 312.0 L406.0 136.0 L286.0 256.0 Z" style="fill:var(--ink, #1b1d24)"/>
+  <path class="wing right" d="M286.0 256.0 L406.0 136.0 L352.0 226.0 Z" style="fill:var(--ink, #1b1d24)"/>
+  <path class="low right" d="M282.0 316.0 L374.0 268.0 L382.0 276.0 L300.0 334.0 Z" style="fill:var(--ink2, #3a3f4c)"/>
+  <path class="low right" d="M374.0 268.0 L406.0 288.0 L382.0 276.0 Z" style="fill:var(--ink3, #626879)"/>
+  <path class="body right" d="M256.0 308.0 L310.0 298.0 L256.0 368.0 Z" style="fill:var(--ink, #1b1d24)"/>
+  <path class="body right" d="M256.0 368.0 L310.0 298.0 L286.0 334.0 Z" style="fill:var(--ink3, #626879)"/>
+  <path class="wing left" d="M252.0 312.0 L194.0 284.0 L106.0 136.0 Z" style="fill:var(--ink2, #3a3f4c)"/>
+  <path class="wing left" d="M252.0 312.0 L106.0 136.0 L226.0 256.0 Z" style="fill:var(--ink, #1b1d24)"/>
+  <path class="wing left" d="M226.0 256.0 L106.0 136.0 L160.0 226.0 Z" style="fill:var(--ink, #1b1d24)"/>
+  <path class="low left" d="M230.0 316.0 L138.0 268.0 L130.0 276.0 L212.0 334.0 Z" style="fill:var(--ink2, #3a3f4c)"/>
+  <path class="low left" d="M138.0 268.0 L106.0 288.0 L130.0 276.0 Z" style="fill:var(--ink3, #626879)"/>
+  <path class="body left" d="M256.0 308.0 L202.0 298.0 L256.0 368.0 Z" style="fill:var(--ink, #1b1d24)"/>
+  <path class="body left" d="M256.0 368.0 L202.0 298.0 L226.0 334.0 Z" style="fill:var(--ink3, #626879)"/>
 </svg>
