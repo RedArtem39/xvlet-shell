@@ -3,8 +3,8 @@ import qs.components
 import qs.services
 
 // The launcher's button: a cookie that turns into a flower under the
-// pointer, the dragon (xvlet's mark) turning back the other way and
-// nodding; a circle while open
+// pointer, xvlet's mark turning back the other way, its arcs parting;
+// a circle while open
 Item {
     id: root
     property bool vert: false
@@ -24,13 +24,12 @@ Item {
     }
     XvletMark {
         anchors.centerIn: parent
-        width: 26; height: 26
+        width: 22; height: 22
         ink: Theme.fgPrimary
-        cut: Theme.primary
         rotation: area.containsMouse && !Ui.launcher ? -40 : 0
-        headTurn: area.containsMouse ? -12 : 0
+        spread: area.containsMouse || Ui.launcher ? 26 : 0
         Behavior on rotation { SpringAnim {} }
-        Behavior on headTurn { SpringAnim { ms: 500 } }
+        Behavior on spread { SpringAnim { ms: 500 } }
     }
     MouseArea {
         id: area
