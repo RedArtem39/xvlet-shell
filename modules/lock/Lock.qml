@@ -12,18 +12,19 @@ import qs.services
 // music on the right). Unlocking folds the panel away. The password is the
 // account's own, checked by the system's helper for lock screens: chkpwd
 // on WynlandOS, PAM's unix_chkpwd elsewhere (same use: the user's name as
-// the argument, the password on stdin ending in a NUL). Zerp has no session
-// lock protocol: this is the top layer with the keyboard held.
-PanelWindow {
-    id: root
+// the argument, the password on stdin ending in a NUL).
+//
+// A session lock (ext-session-lock-v1: Zerp, Hyprland, sway): the
+// compositor keeps the session locked -- nothing else drawn, no other
+// window and no shortcut gets a key, and if this shell dies the session
+// stays locked. One for all screens (shell.qml makes one).
+WlSessionLock {
+    id: lock
+    locked: Ui.locked
 
-    visible: Ui.locked || folding.running
-    WlrLayershell.namespace: "xvlet-lock"
-    WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.exclusionMode: ExclusionMode.Ignore
-    WlrLayershell.keyboardFocus: Ui.locked ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
-    anchors { top: true; bottom: true; left: true; right: true }
-    color: "transparent"
+WlSessionLockSurface {
+    id: root
+    color: "black"
 
     property string state_: "idle"        // idle, input, busy, unlocking
     property string pass: ""
@@ -45,10 +46,12 @@ PanelWindow {
 
     Process {
         id: check
-        command: ["sh", "-c", "if [ -x /usr/lib/wynland/chkpwd ]; then exec /usr/lib/wynland/chkpwd \"$1\"; fi; " +
-                  "exec \"$(command -v unix_chkpwd || echo /usr/sbin/unix_chkpwd)\" \"$1\" nullok", "chkpwd", Quickshell.env("USER") || ""]
+        // the password comes as one line; each helper gets it its own way
+        // (chkpwd: a line; unix_chkpwd: ending in a NUL)
+        command: ["sh", "-c", "IFS= read -r p; if [ -x /usr/lib/wynland/chkpwd ]; then printf '%s\\n' \"$p\" | /usr/lib/wynland/chkpwd \"$1\"; " +
+                  "else printf '%s\\0' \"$p\" | \"$(command -v unix_chkpwd || echo /usr/sbin/unix_chkpwd)\" \"$1\" nullok; fi", "chkpwd", Quickshell.env("USER") || ""]
         stdinEnabled: true
-        onStarted: { write(root.pass + "\u0000"); stdinEnabled = false; }
+        onStarted: { write(root.pass + "\n"); stdinEnabled = false; }
         onExited: code => {
             if (code === 0) { root.state_ = "unlocking"; root.wings = false; folding.start(); }
             else { root.state_ = "input"; root.bad = true; root.pass = ""; shake.restart(); }
@@ -97,14 +100,6 @@ PanelWindow {
             text: clock.date.toLocaleDateString(Qt.locale("ru_RU"), "dddd, d MMMM").toUpperCase()
             size: 17; w: 600; color: Theme.fgSurfaceVar; font.letterSpacing: 17 * .09; topPadding: 18
         }
-    }
-    // the clock's digits: heavy, tight, a hard shadow 4 px under them
-    component Big: Item {
-        property alias text: bt.text
-        property alias color: bt.color
-        width: bt.implicitWidth; height: bt.implicitHeight * .9
-        Label { x: 0; y: 4; text: bt.text; size: 190; w: 800; font.letterSpacing: -7.6; color: Qt.rgba(0, 0, 0, .32); font.features: { "tnum": 1 } }
-        Label { id: bt; size: 190; w: 800; font.letterSpacing: -7.6; font.features: { "tnum": 1 } }
     }
 
     // the panel: 1280 x 566; its core (440) comes first, the wings after
@@ -271,10 +266,21 @@ PanelWindow {
             idle.restart();
             if (e.key === Qt.Key_Return || e.key === Qt.Key_Enter) root.tryUnlock();
             else if (e.key === Qt.Key_Backspace) { if (root.pass) Sfx.ui("type"); root.pass = root.pass.slice(0, -1); }
-            else if (e.text && e.text.length === 1 && e.text.charCodeAt(0) >= 32) { root.pass += e.text; root.bad = false; Sfx.ui("type"); }
+            // (a shortcut's key -- Super+T -- is not a character of the password)
+            else if (e.text && e.text.length === 1 && e.text.charCodeAt(0) >= 32 && !(e.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))) { root.pass += e.text; root.bad = false; Sfx.ui("type"); }
             e.accepted = true;
         }
         MouseArea { anchors.fill: parent; onClicked: root.wake() }
+    }
+}
+
+    // the clock's digits: heavy, tight, a hard shadow 4 px under them
+    component Big: Item {
+        property alias text: bt.text
+        property alias color: bt.color
+        width: bt.implicitWidth; height: bt.implicitHeight * .9
+        Label { x: 0; y: 4; text: bt.text; size: 190; w: 800; font.letterSpacing: -7.6; color: Qt.rgba(0, 0, 0, .32); font.features: { "tnum": 1 } }
+        Label { id: bt; size: 190; w: 800; font.letterSpacing: -7.6; font.features: { "tnum": 1 } }
     }
 
     component Chip: Rectangle {

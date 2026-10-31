@@ -23,6 +23,9 @@ ShellRoot {
     FontLoader { source: Qt.resolvedUrl("assets/fonts/RobotoFlex.ttf") }
     FontLoader { source: Qt.resolvedUrl("assets/fonts/MaterialSymbolsRounded.ttf") }
 
+    // the lock screen: one session lock for every screen
+    Lock {}
+
     // made at start: the sounds (they load ahead, and hear the network),
     // the wallpapers (a missing default is replaced at once)
     Component.onCompleted: { Sfx.volume; Walls.list; }
@@ -49,7 +52,6 @@ ShellRoot {
             Dock { screen: s.modelData }
             Overlay { screen: s.modelData }
             Notices { screen: s.modelData }
-            Lock { screen: s.modelData }
         }
     }
 

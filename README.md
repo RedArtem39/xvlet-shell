@@ -53,11 +53,14 @@ looks like the prototype pixel for pixel: the same palette maths, shapes, sizes 
 | brightness | `/sys/class/backlight` | the slider says the screen has no control |
 | battery | `/sys/class/power_supply/BAT0` (WynlandOS has none yet) | "От сети · батареи нет" |
 | sounds | Qt Multimedia | only the event sounds play, through `pw-play` |
+| the lock screen | `ext-session-lock-v1` in the compositor | it cannot lock |
 | the lock screen's password check | WynlandOS's `/usr/lib/wynland/chkpwd`, or PAM's `unix_chkpwd` | it cannot unlock |
 
 Wi-Fi and Bluetooth tiles say "нет": WynlandOS has neither, and the shell does not pretend.
-The lock screen is a layer on top of everything with the keyboard held, not a session lock
-the compositor enforces (Zerp has no session-lock protocol yet).
+The lock screen is a session lock (`ext-session-lock-v1`, through Quickshell's
+`WlSessionLock`): the compositor keeps the session locked — nothing else drawn, no other
+window or shortcut gets a key, and if the shell dies the session stays locked. It needs a
+compositor that has the protocol (Zerp, Hyprland, sway).
 
 ## Running
 
