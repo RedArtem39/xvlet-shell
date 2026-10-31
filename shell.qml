@@ -20,6 +20,10 @@ import "modules/notices"
 import "modules/lock"
 
 ShellRoot {
+    // no watching of its own files for a live reload: where the system has
+    // no inotify (WynlandOS) Qt polls every file, over and over
+    settings.watchFiles: false
+
     FontLoader { source: Qt.resolvedUrl("assets/fonts/RobotoFlex.ttf") }
     FontLoader { source: Qt.resolvedUrl("assets/fonts/MaterialSymbolsRounded.ttf") }
 
