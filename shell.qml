@@ -23,6 +23,25 @@ ShellRoot {
     FontLoader { source: Qt.resolvedUrl("assets/fonts/RobotoFlex.ttf") }
     FontLoader { source: Qt.resolvedUrl("assets/fonts/MaterialSymbolsRounded.ttf") }
 
+    // what Zerp has to say (its events on Hyprland's socket): the canvas
+    // on or off, a place marked -- the compositor shows nothing itself
+    Connections {
+        target: Hyprland
+        function onRawEvent(ev) {
+            const d = ev.data;
+            if (ev.name === "canvas")
+                Notifs.toast(d === "1" ? "view_quilt" : "grid_view", d === "1" ? "Бесконечный холст" : "Тайлинг",
+                             d === "1" ? "Alt+G — обратно · Alt+мышь — окна · Ctrl+колёсико — масштаб" : "Alt+G — холст");
+            else if (ev.name === "canvashome")
+                Notifs.toast("home", d === "home" ? "Начало холста" : "Обратно", "Alt+A");
+            else if (ev.name === "canvasmark") {
+                const [what, n] = d.split(",");
+                Notifs.toast("bookmark", what === "set" ? "Место " + n + " запомнено" : what === "go" ? "Место " + n : "Место " + n + " пусто",
+                             what === "set" ? "Ctrl+Alt+" + n + " — сюда" : what === "empty" ? "Ctrl+Alt+Shift+" + n + " — запомнить" : "");
+            }
+        }
+    }
+
     // the lock screen: one session lock for every screen
     Lock {}
 
