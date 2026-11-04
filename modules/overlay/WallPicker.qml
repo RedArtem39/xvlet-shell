@@ -1,4 +1,6 @@
 import QtQuick
+import QtQuick.Shapes
+import QtQuick.Effects
 import qs.components
 import qs.services
 
@@ -106,38 +108,59 @@ Item {
                 Behavior on scale { SpringAnim { ms: 600 } }
                 Behavior on opacity { enabled: card.placed; NumberAnimation { duration: 400 } }
                 readonly property real dim: isCur ? 0 : 1 - Math.max(.45, 1 - ad * .15)
-                onDimChanged: pic.requestPaint()
-                onWidthChanged: pic.requestPaint()
 
-                // the picture, slanted (skewX -12deg) and rounded; the
-                // picture itself kept upright inside the slant
-                Canvas {
+                // the picture, slanted (skewX -12deg) and rounded: a shape
+                // filled with the picture's texture, rebuilt every frame of
+                // the springs (a Canvas repainted late: the parts slid apart)
+                Shape {
                     id: pic
-                    // (the slant reaches past the card by half its height times tan 12deg on each side)
+                    // the slant reaches past the card by half its height times tan 12deg on each side
                     readonly property real k: Math.tan(12 * Math.PI / 180)
                     readonly property real o: card.height / 2 * k
-                    x: -o; width: card.width + 2 * o; height: card.height
-                    readonly property string src: "file://" + card.modelData
-                    Image { id: probe; visible: false; source: pic.src; asynchronous: true }
-                    Component.onCompleted: loadImage(src)
-                    onImageLoaded: requestPaint()
-                    onWidthChanged: requestPaint()
-                    onPaint: {
-                        const g = getContext("2d"), W = card.width, H = height, R = Theme.rm, Wc = width;
-                        g.reset();
-                        g.save();
-                        g.transform(1, 0, -k, 1, 2 * o, 0);
-                        g.beginPath(); g.roundedRect(0, 0, W, H, R, R); g.clip();
-                        g.setTransform(1, 0, 0, 1, 0, 0);
-                        if (isImageLoaded(src) && probe.implicitWidth > 0) {
-                            // cover the box: the picture's middle
-                            const iw = probe.implicitWidth, ih = probe.implicitHeight, sc = Math.max(Wc / iw, H / ih), sw = Wc / sc, sh = H / sc;
-                            g.drawImage(src, (iw - sw) / 2, (ih - sh) / 2, sw, sh, 0, 0, Wc, H);
-                        } else { g.fillStyle = Theme.surfaceHigh; g.fillRect(0, 0, Wc, H); }
-                        if (card.dim > 0) { g.fillStyle = Qt.rgba(0, 0, 0, card.dim); g.fillRect(0, 0, Wc, H); }
-                        g.restore();
+                    readonly property real wc: card.width + 2 * o
+                    x: -o; width: wc; height: card.height
+                    preferredRendererType: Shape.GeometryRenderer
+                    // a rounded rect W x H, slanted: x' = x - k*y + 2o (Bezier
+                    // arcs stay exact under the slant)
+                    readonly property string d: {
+                        const W = card.width, H = card.height, R = Theme.rm, c = R * .5523, k = pic.k, o2 = 2 * pic.o;
+                        const f = (x, y) => (x - k * y + o2).toFixed(2) + " " + y.toFixed(2);
+                        return "M" + f(R, 0) + " L" + f(W - R, 0) + " C" + f(W - R + c, 0) + " " + f(W, R - c) + " " + f(W, R)
+                            + " L" + f(W, H - R) + " C" + f(W, H - R + c) + " " + f(W - R + c, H) + " " + f(W - R, H)
+                            + " L" + f(R, H) + " C" + f(R - c, H) + " " + f(0, H - R + c) + " " + f(0, H - R)
+                            + " L" + f(0, R) + " C" + f(0, R - c) + " " + f(R - c, 0) + " " + f(R, 0) + " Z";
                     }
-                    Connections { target: probe; function onStatusChanged() { pic.requestPaint(); } }
+                    // a plain card until the picture is there
+                    ShapePath {
+                        strokeWidth: -1
+                        fillColor: Theme.surfaceHigh
+                        PathSvg { path: pic.d }
+                    }
+                }
+                // the picture covering the box (its middle), cut to the shape
+                Shape {
+                    id: cut
+                    x: pic.x; width: pic.width; height: pic.height
+                    visible: false
+                    layer.enabled: true
+                    preferredRendererType: Shape.GeometryRenderer
+                    ShapePath { strokeWidth: -1; fillColor: "white"; PathSvg { path: pic.d } }
+                }
+                Image {
+                    x: pic.x; width: pic.width; height: pic.height
+                    source: "file://" + card.modelData
+                    asynchronous: true
+                    sourceSize.height: 480
+                    fillMode: Image.PreserveAspectCrop
+                    visible: status === Image.Ready
+                    layer.enabled: true
+                    layer.effect: MultiEffect { maskEnabled: true; maskSource: cut; maskThresholdMin: .5; maskSpreadAtMin: .2 }
+                }
+                Shape {
+                    x: pic.x; width: pic.width; height: pic.height
+                    visible: card.dim > 0
+                    preferredRendererType: Shape.GeometryRenderer
+                    ShapePath { strokeWidth: -1; fillColor: Qt.rgba(0, 0, 0, card.dim); PathSvg { path: pic.d } }
                 }
                 Label {
                     x: 24 - 18 * Math.tan(12 * Math.PI / 180); anchors.bottom: parent.bottom; anchors.bottomMargin: 18
