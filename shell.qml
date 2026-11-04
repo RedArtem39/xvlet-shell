@@ -63,6 +63,24 @@ ShellRoot {
         }
     }
 
+    // the windows' borders in the shell's colours (Zerp, as Hyprland:
+    // general:col.active_border / inactive_border), again on each change
+    QtObject {
+        id: borders
+        function hex(c) { const h = v => ("0" + Math.round(v * 255).toString(16)).slice(-2); return "rgba(" + h(c.r) + h(c.g) + h(c.b) + h(c.a) + ")"; }
+        readonly property string active: hex(Theme.primary) + " " + hex(Theme.tertiary)
+        readonly property string idle: hex(Theme.surfaceHigh)
+        function send() {
+            Quickshell.execDetached(["hyprctl", "keyword", "general:col.active_border", active + " 45deg"]);
+            Quickshell.execDetached(["hyprctl", "keyword", "general:col.inactive_border", idle]);
+        }
+        onActiveChanged: sendLater.restart()
+        onIdleChanged: sendLater.restart()
+        Component.onCompleted: sendLater.restart()
+    }
+    // (once a burst of changes settles: a new wallpaper moves every colour)
+    Timer { id: sendLater; interval: 300; onTriggered: borders.send() }
+
     Variants {
         model: Quickshell.screens
         Scope {
