@@ -140,6 +140,7 @@ Item {
                 property bool anyRow: true
             }
         }
+        ScrollRail { flick: fl }
     }
     IconButton { anchors.right: parent.right; anchors.top: parent.top; anchors.margins: 16; icon: "close"; onClicked: Ui.settings = false }
 
