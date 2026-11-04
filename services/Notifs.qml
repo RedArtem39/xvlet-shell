@@ -11,7 +11,10 @@ import Quickshell.Services.Notifications
 Singleton {
     id: root
 
-    readonly property var list: server.trackedNotifications.values
+    // the centre's: the apps' (D-Bus) and the shell's own that are kept
+    // (a test, "copied"); the canvas's notices are toasts only
+    readonly property var list: own.concat(server.trackedNotifications.values)
+    property var own: []
     property var toasts: []
     property bool badge: false
     readonly property bool dnd: Config.data.notif.dnd
@@ -40,11 +43,20 @@ Singleton {
         return m < 1 ? "сейчас" : m < 60 ? m + " мин" : Math.floor(m / 60) + " ч";
     }
     function dropToast(n) { toasts = toasts.filter(t => t !== n); }
-    function dismiss(n) { dropToast(n); if (n.dismiss) n.dismiss(); }
+    function dismiss(n) { dropToast(n); if (n.dismiss) n.dismiss(); else own = own.filter(o => o !== n); }
     // the settings' "Проверить": a toast of our own (no notify-send here)
-    function test(summary, body) { toast("notifications", summary, body); Sfx.notify(false); }
-    function toast(icon, summary, body) { toasts = toasts.concat([{ summary: summary, body: body, appName: "xvlet", actions: [], image: "", appIcon: "", icon: icon }]); }
-    function clear() { for (const n of list.slice()) n.dismiss(); toasts = []; }
+    function test(summary, body) { toast("notifications", summary, body, true); Sfx.notify(false); }
+    // keep: into the centre as well (a notification); else a toast only
+    function toast(icon, summary, body, keep) {
+        const n = { summary: summary, body: body, appName: "xvlet", actions: [], image: "", appIcon: "", icon: icon };
+        toasts = toasts.concat([n]);
+        if (keep) {
+            own = own.concat([n]);
+            arrivals = arrivals.concat([{ n: n, t: Date.now() }]);
+            badge = true;
+        }
+    }
+    function clear() { for (const n of server.trackedNotifications.values.slice()) n.dismiss(); own = []; toasts = []; }
     // an app's icon for a notification: its image, its app icon, a symbol
     function symbol(n) {
         if (n.icon) return n.icon;

@@ -94,10 +94,10 @@ Popout {
             id: qEmpty
             visible: Notifs.list.length === 0
             width: parent.width
-            topPadding: 30; bottomPadding: 22; spacing: 10
-            MShape { width: 72; height: 72; shape: Theme.shCookie9; color: Theme.secondaryContainer; anchors.horizontalCenter: parent.horizontalCenter
-                MIcon { anchors.centerIn: parent; text: "notifications_off"; size: 28; color: Theme.fgSecondaryContainer } }
-            Label { text: "Новых уведомлений нет"; size: 14; w: 600; dim: true; anchors.horizontalCenter: parent.horizontalCenter }
+            topPadding: 14; bottomPadding: 22; spacing: 6
+            // a cat asleep on its pillow, waiting for them
+            SleepyCat { width: 200; height: 150; anchors.horizontalCenter: parent.horizontalCenter; live: qEmpty.visible }
+            Label { text: Notifs.dnd ? "Не беспокоить — котик спит крепко" : "Новых уведомлений нет"; size: 14; w: 600; dim: true; anchors.horizontalCenter: parent.horizontalCenter }
         }
         ListView {
             id: nl

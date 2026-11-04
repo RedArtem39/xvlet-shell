@@ -65,7 +65,7 @@ Item {
         const it = items[i];
         if (it === undefined) return;
         if (mode === ">") { it.f(); return; }
-        if (mode === ":" || mode === "=") { Quickshell.clipboardText = it; Ui.closeAll(); Notifs.toast(mode === ":" ? "mood" : "content_copy", mode === ":" ? "Эмодзи скопирован" : "Скопировано", mode === ":" ? it + " — вставьте куда нужно" : it); return; }
+        if (mode === ":" || mode === "=") { Quickshell.clipboardText = it; Ui.closeAll(); Notifs.toast(mode === ":" ? "mood" : "content_copy", mode === ":" ? "Эмодзи скопирован" : "Скопировано", mode === ":" ? it + " — вставьте куда нужно" : it, true); return; }
         if (mode === "@") { Walls.set(it); return; }
         Ui.closeAll(); Apps.launch(it);
     }
