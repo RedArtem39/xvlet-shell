@@ -1,19 +1,30 @@
 // xvlet's skin for wynlogin, WynlandOS's login screen (what an SDDM theme
-// is elsewhere): the shell's lock screen as the way in. Installed at
-// /usr/share/wynlogin/themes/xvlet/Greeter.qml; chosen with "theme = xvlet"
-// in /etc/wynland/login.conf.
+// is elsewhere). Installed at /usr/share/wynlogin/themes/xvlet/Greeter.qml;
+// chosen with "theme = xvlet" in /etc/wynland/login.conf.
+//
+// A card: on its left a living scene (scenes/<id>/Scene.qml beside the
+// shell, at /usr/share/xvlet/wynlogin -- baked from animated SVGs by
+// tools/bake_scene.py) with the clock in its sky (Clock.qml); on its right
+// who logs in and the password. Behind it the same scene, blurred, as the
+// room's light; the colours are the scene's own hue's.
+//
+// Each account has its own look, chosen in the shell's settings ("Экран
+// входа"): the scene, the clock's style and place, the date --
+// greeter.users[i].look, read by Zerp from /var/lib/wynlogin/looks/<name>.json
+// (the file must be the account's own). Switching accounts switches the look.
+// Without the scene (missing files): the shell's wallpaper in the card.
 //
 // A theme only draws. wynlogin checks the password and starts the session;
 // its link here is `greeter` (apps/zerp2/greeter.h in WynlandOS):
 //   greeter.users    [{ name, fullName }]: the accounts that can log in
 //   greeter.busy     a password is being checked
 //   greeter.login(name, password)
-//   greeter.accepted()   -> fade out, then greeter.quit()
+//   greeter.accepted()   -> fold away, then greeter.quit()
 //   greeter.refused(reason)
 // and wallpaperUrl, the machine's wallpaper ("" if none). It runs as the
 // unprivileged "greeter" account, inside Zerp, without Quickshell: plain
-// QtQuick only, so the shell's components are not used here -- its colours
-// (the default wallpaper's seed, tonal, dark) and fonts are.
+// QtQuick only, so the shell's components are not used here -- its colour
+// system (M3 tonal, dark; seeded by the scene's rose) and fonts are.
 import QtQuick
 import QtQuick.Window
 import QtQuick.Effects
@@ -25,21 +36,31 @@ Window {
     color: surface
     title: "Login"
 
-    // ---- the shell's colours: services/Theme.qml with the seed of the
-    // default wallpaper (01-dusk: hue 257, tonal scheme), dark
-    readonly property real hp: 257
-    readonly property real ht: 317
-    readonly property color primary: oklch(80, .12, hp)
-    readonly property color primaryContainer: oklch(36, .108, hp)
-    readonly property color fgPrimaryContainer: oklch(91, .06, hp)
-    readonly property color tertiaryContainer: oklch(36, .081, ht)
-    readonly property color fgTertiaryContainer: oklch(91, .045, ht)
-    readonly property color surface: oklch(16.5, .024, hp)
-    readonly property color surfaceLow: oklch(19.5, .027, hp)
-    readonly property color surfaceHigh: oklch(26, .0315, hp)
-    readonly property color surfaceHighest: oklch(30, .033, hp)
-    readonly property color fgSurface: oklch(93, .0105, hp)
-    readonly property color fgSurfaceVar: oklch(78, .024, hp)
+    readonly property string shell: "file:///usr/share/xvlet/"
+
+    // ---- the look: the chosen account's
+    readonly property var look: user && user.look ? user.look : ({})
+    readonly property string sceneId: look.scene || "sakura-katana"
+
+    // ---- the shell's colours (services/Theme.qml: tonal, dark) seeded by
+    // the scene's own hue
+    property real hp: scene.item ? scene.item.hue : 355
+    Behavior on hp { NumberAnimation { duration: 600 } }
+    readonly property real ht: hp + 60
+    readonly property color primary: oklch(82, .09, hp)
+    readonly property color fgPrimary: oklch(26, .07, hp)
+    readonly property color primaryContainer: oklch(38, .08, hp)
+    readonly property color fgPrimaryContainer: oklch(92, .05, hp)
+    readonly property color tertiaryContainer: oklch(38, .07, ht)
+    readonly property color fgTertiaryContainer: oklch(92, .045, ht)
+    readonly property color surface: oklch(15, .025, hp)
+    readonly property color surfaceLow: oklch(20, .03, hp)
+    readonly property color surfaceHigh: oklch(27, .032, hp)
+    readonly property color surfaceHighest: oklch(31, .034, hp)
+    readonly property color fgSurface: oklch(94, .012, hp)
+    readonly property color fgSurfaceVar: oklch(79, .028, hp)
+    // the clock on the scene's sky: dark digits on a light one
+    readonly property color sky: scene.item && !scene.item.lightSky ? oklch(96, .03, hp) : oklch(31, .06, hp)
     readonly property color error: oklch(72, .16, 25)
     readonly property color errorContainer: oklch(38, .12, 25)
     function oklch(L, C, H) {
@@ -59,24 +80,25 @@ Window {
     function s(v) { return v * root.height / 1080 }
 
     // the shell's fonts, from where the shell is
-    FontLoader { source: "file:///usr/share/xvlet/assets/fonts/RobotoFlex.ttf" }
-    FontLoader { source: "file:///usr/share/xvlet/assets/fonts/MaterialSymbolsRounded.ttf" }
+    FontLoader { source: root.shell + "assets/fonts/RobotoFlex.ttf" }
+    FontLoader { source: root.shell + "assets/fonts/MaterialSymbolsRounded.ttf" }
 
     // ---- who: the accounts, the one chosen
     readonly property var users: greeter.users
     property int current: 0
     readonly property var user: users.length > 0 ? users[Math.min(current, users.length - 1)] : null
 
-    property string state_: "idle"        // idle, input, busy, leaving
+    property string state_: "idle"        // idle (the field asleep), input, busy, leaving
     property bool bad: false
-    property real fold: 1
+    property real fold: 0                 // the card's way in (0 -> 1) and out (-> 0)
+    NumberAnimation on fold { id: comeIn; from: 0; to: 1; duration: 800; easing.type: Easing.BezierSpline; easing.bezierCurve: root.spring }
 
     function wake() {
         if (state_ !== "idle") return;
         state_ = "input"; idle.restart(); input.forceActiveFocus();
     }
-    function sleep_() { if (state_ === "input") { state_ = "idle"; input.text = ""; } }
-    Timer { id: idle; interval: 15000; onTriggered: if (root.state_ === "input" && !input.text) root.sleep_() }
+    function sleep_() { if (state_ === "input") { state_ = "idle"; input.text = ""; keys.forceActiveFocus(); } }
+    Timer { id: idle; interval: 30000; onTriggered: if (root.state_ === "input" && !input.text) root.sleep_() }
     function submit() {
         if (state_ !== "input" || !user || !input.text || greeter.busy) return;
         bad = false; state_ = "busy";
@@ -90,177 +112,198 @@ Window {
     Connections {
         target: greeter
         function onAccepted() { root.state_ = "leaving"; leave.start(); }
-        function onRefused(reason) { root.state_ = "input"; root.bad = true; input.text = ""; shake.restart(); idle.restart(); }
+        function onRefused(reason) { root.state_ = "input"; root.bad = true; input.text = ""; shake.restart(); idle.restart(); input.forceActiveFocus(); }
     }
     SequentialAnimation {
         id: leave
-        PauseAnimation { duration: 140 }
-        NumberAnimation { target: root; property: "fold"; to: 0; duration: 420; easing.type: Easing.InBack; easing.overshoot: 1.3 }
+        PauseAnimation { duration: 260 }
+        NumberAnimation { target: root; property: "fold"; to: 0; duration: 480; easing.type: Easing.InBack; easing.overshoot: 1.3 }
         ScriptAction { script: greeter.quit() }
     }
 
-    // ---- the wallpaper: the shell's own, blurred once the panel is up
-    Image {
-        id: bg
-        anchors.fill: parent
-        anchors.margins: -40
-        source: "file:///usr/share/xvlet/assets/walls/01-dusk.png"
-        fillMode: Image.PreserveAspectCrop
-        sourceSize: Qt.size(root.width, root.height)
-        opacity: root.fold
-        scale: root.state_ === "idle" ? 1 : 1.04
-        Behavior on scale { NumberAnimation { duration: 1100; easing.type: Easing.BezierSpline; easing.bezierCurve: root.smooth } }
-        onStatusChanged: if (status === Image.Error && wallpaperUrl) source = wallpaperUrl
-        layer.enabled: true
-        layer.effect: MultiEffect {
-            blurEnabled: true; blurMax: 48; saturation: .15
-            blur: root.state_ === "idle" ? 0 : .7
-            Behavior on blur { NumberAnimation { duration: 500 } }
-        }
-    }
-    Rectangle {
-        anchors.fill: parent
-        color: Qt.rgba(0, 0, 0, root.state_ === "idle" ? .2 : .42)
-        opacity: root.fold
-        Behavior on color { ColorAnimation { duration: 450 } }
-    }
-
-    // ---- at rest: the clock, the shell's big digits
     property date now: new Date()
     Timer { interval: 1000; running: true; repeat: true; onTriggered: root.now = new Date() }
-    Column {
-        anchors.horizontalCenter: parent.horizontalCenter
-        y: parent.height * .36 - height / 2
-        opacity: root.state_ === "idle" && root.fold > .5 ? 1 : 0
-        scale: root.state_ === "idle" ? 1 : .92
-        Behavior on opacity { NumberAnimation { duration: 150 } }
-        Behavior on scale { NumberAnimation { duration: 250; easing.type: Easing.BezierSpline; easing.bezierCurve: root.spring } }
-        Row {
-            anchors.horizontalCenter: parent.horizontalCenter
-            spacing: root.s(44)
-            Big { text: Qt.formatTime(root.now, "hh"); color: root.primary }
-            Big { text: Qt.formatTime(root.now, "mm"); color: root.fgSurface }
-        }
-        Label {
-            anchors.horizontalCenter: parent.horizontalCenter
-            text: root.now.toLocaleDateString(Qt.locale("ru_RU"), "dddd, d MMMM").toUpperCase()
-            size: 17; w: 600; color: root.fgSurfaceVar; font.letterSpacing: root.s(17 * .09); topPadding: root.s(18)
-        }
-    }
-    Label {
-        anchors.horizontalCenter: parent.horizontalCenter
-        y: parent.height - height - root.s(48)
-        text: "Нажмите любую клавишу"
-        size: 14; w: 600; color: root.fgSurfaceVar
-        opacity: root.state_ === "idle" && root.fold > .5 ? .8 : 0
-        Behavior on opacity { NumberAnimation { duration: 150 } }
-    }
 
-    // ---- the panel: the lock screen's core -- who, the state, the password
-    Rectangle {
-        id: panel
-        readonly property bool up: root.state_ !== "idle"
-        width: root.s(440); height: core.height + root.s(120)
-        anchors.horizontalCenter: parent.horizontalCenter
-        y: (parent.height - height) / 2 + (up ? 0 : root.s(90))
-        radius: root.s(48)
-        color: root.alpha(root.surfaceLow, .82)
-        opacity: up ? root.fold : 0
-        scale: (up ? 1 : .92) * (root.state_ === "leaving" ? root.fold : 1)
-        Behavior on y { NumberAnimation { duration: 250; easing.type: Easing.BezierSpline; easing.bezierCurve: root.smooth } }
-        Behavior on opacity { NumberAnimation { duration: 150 } }
+    // ---- the room: the scene blurred (or the wallpaper), dimmed
+    Image {
+        anchors.fill: parent
+        anchors.margins: -root.s(40)
+        source: root.shell + "wynlogin/scenes/" + root.sceneId + "/room.png"
+        fillMode: Image.PreserveAspectCrop
+        opacity: .25 + .75 * Math.max(0, Math.min(1, root.fold))
+        onStatusChanged: if (status === Image.Error && wallpaperUrl) source = wallpaperUrl
+    }
+    Rectangle { anchors.fill: parent; color: Qt.rgba(0, 0, 0, .52) }
 
-        Column {
-            id: core
-            x: root.s(30); y: root.s(60); width: root.s(380)
-            // the avatar: the name's letter; arrows on the sides with more accounts
-            Item {
-                width: parent.width; height: root.s(200)
-                Rectangle {
-                    width: root.s(200); height: width; radius: width / 2
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    color: root.tertiaryContainer
-                    scale: avm.containsMouse ? 1.04 : 1
-                    Behavior on scale { NumberAnimation { duration: 350; easing.type: Easing.BezierSpline; easing.bezierCurve: root.spring } }
-                    Label { anchors.centerIn: parent; text: root.user ? root.user.name[0].toUpperCase() : "?"; size: 84; w: 700; color: root.fgTertiaryContainer }
-                    MouseArea { id: avm; anchors.fill: parent; hoverEnabled: true; onClicked: root.pick(1) }
-                }
-                Arrow { anchors.left: parent.left; icon: "chevron_left"; onClicked: root.pick(-1) }
-                Arrow { anchors.right: parent.right; icon: "chevron_right"; onClicked: root.pick(1) }
+    // ---- the card
+    Item {
+        id: card
+        width: Math.min(root.s(1180), root.width * .92)
+        height: Math.min(root.s(560), root.height * .74)
+        anchors.centerIn: parent
+        opacity: Math.max(0, Math.min(1, root.fold * 1.4))
+        scale: .94 + .06 * root.fold
+
+        // its body: the scene's side and the panel's, one rounded shape
+        RectangularShadow {
+            anchors.fill: parent; radius: root.s(40)
+            blur: root.s(70); offset.y: root.s(30); spread: -root.s(20)
+            color: Qt.rgba(0, 0, 0, .55)
+        }
+        Rectangle { anchors.fill: parent; radius: root.s(40); color: root.alpha(root.surfaceLow, .92) }
+
+        // the scene, cut to the card's left (rounded on the outer side)
+        Item {
+            id: art
+            width: Math.round(card.width * 1.6 / 2.6); height: card.height
+            layer.enabled: true
+            layer.effect: MultiEffect { maskEnabled: true; maskSource: artMask; maskThresholdMin: .5; maskSpreadAtMin: 1 }
+            Loader {
+                id: scene
+                source: root.shell + "wynlogin/scenes/" + root.sceneId + "/Scene.qml"
+                // the scene covers the side, a little below its middle (the field, the blade)
+                readonly property real k: item ? Math.max(art.width / item.width, art.height / item.height) : 1
+                x: item ? (art.width - item.width * k) / 2 : 0
+                y: item ? (art.height - item.height * k) * .6 : 0
+                onLoaded: { item.transformOrigin = Item.TopLeft; item.scale = Qt.binding(() => scene.k); }
             }
-            Item { width: 1; height: root.s(16) }
-            Row {
-                spacing: root.s(10)
-                Chip { icon: "person"; text: root.user ? root.user.fullName : "нет учётных записей" }
-                Chip {
-                    icon: root.state_ === "busy" ? "progress_activity" : root.bad ? "error" : "lock"
-                    text: root.state_ === "busy" ? "Проверка" : root.state_ === "leaving" ? "Добро пожаловать" : root.bad ? "Неверный пароль" : "Вход"
-                    bad: root.bad
+            Image {
+                anchors.fill: parent
+                visible: scene.status === Loader.Error
+                source: wallpaperUrl || root.shell + "assets/walls/01-dusk.png"
+                fillMode: Image.PreserveAspectCrop
+            }
+            // the clock in the scene's sky (Clock.qml: the account's style)
+            Loader {
+                anchors.fill: parent
+                source: root.shell + "wynlogin/Clock.qml"
+                onLoaded: {
+                    item.style = Qt.binding(() => root.look.clock || "big");
+                    item.align = Qt.binding(() => root.look.clockPos || "left");
+                    item.showDate = Qt.binding(() => root.look.date !== false);
+                    item.ink = Qt.binding(() => root.sky);
+                    item.k = Qt.binding(() => card.height / 560);
                 }
             }
-            Item { width: 1; height: root.s(8) }
-            Rectangle {
-                id: field
-                width: parent.width; height: root.s(44); radius: height / 2
-                color: root.surfaceHighest
-                border.width: 2
-                border.color: root.bad ? root.error : root.primary
-                transform: Translate { id: sh }
-                SequentialAnimation {
-                    id: shake
-                    NumberAnimation { target: sh; property: "x"; to: -10; duration: 40 }
-                    NumberAnimation { target: sh; property: "x"; to: 10; duration: 70 }
-                    NumberAnimation { target: sh; property: "x"; to: -8; duration: 70 }
-                    NumberAnimation { target: sh; property: "x"; to: 6; duration: 70 }
-                    NumberAnimation { target: sh; property: "x"; to: 0; duration: 60 }
-                }
-                Rectangle {
-                    x: root.s(4); anchors.verticalCenter: parent.verticalCenter
-                    width: root.s(36); height: width; radius: width / 2
-                    color: root.bad ? root.errorContainer : root.primaryContainer
-                    Icon { anchors.centerIn: parent; text: "key"; fill: true; size: 20; color: root.bad ? root.error : root.fgPrimaryContainer }
-                }
-                Row {
-                    anchors.centerIn: parent; spacing: root.s(7)
-                    Repeater {
-                        model: input.text.length
-                        Rectangle {
-                            width: root.s(11); height: width; radius: width / 2; color: root.fgSurface
-                            scale: 0
-                            Component.onCompleted: scale = 1
-                            Behavior on scale { NumberAnimation { duration: 350; easing.type: Easing.BezierSpline; easing.bezierCurve: root.spring } }
-                        }
+        }
+        Item {
+            id: artMask
+            width: art.width; height: art.height
+            visible: false; layer.enabled: true
+            Rectangle { width: parent.width + root.s(60); height: parent.height; radius: root.s(40) }
+        }
+
+        // ---- the panel: who, the state, the password
+        Item {
+            x: art.width; width: card.width - art.width; height: card.height
+            Column {
+                id: core
+                width: Math.min(parent.width - root.s(60), root.s(380))
+                anchors.centerIn: parent
+                // the avatar: the name's letter; arrows on the sides with more accounts
+                Item {
+                    width: parent.width; height: root.s(132)
+                    Rectangle {
+                        width: root.s(124); height: width; radius: width / 2
+                        anchors.centerIn: parent
+                        color: root.primaryContainer
+                        border.width: root.s(3); border.color: root.primary
+                        scale: avm.containsMouse ? 1.04 : 1
+                        Behavior on scale { NumberAnimation { duration: 350; easing.type: Easing.BezierSpline; easing.bezierCurve: root.spring } }
+                        Label { anchors.centerIn: parent; text: root.user ? root.user.name[0].toUpperCase() : "?"; size: 56; w: 750; color: root.fgPrimaryContainer }
+                        MouseArea { id: avm; anchors.fill: parent; hoverEnabled: true; onClicked: root.pick(1) }
                     }
+                    Arrow { anchors.left: parent.left; icon: "chevron_left"; onClicked: root.pick(-1) }
+                    Arrow { anchors.right: parent.right; icon: "chevron_right"; onClicked: root.pick(1) }
+                }
+                Item { width: 1; height: root.s(14) }
+                Label {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: root.user ? (root.user.fullName || root.user.name) : "Нет учётных записей"
+                    size: 26; w: 750; width: Math.min(implicitWidth, parent.width)
                 }
                 Label {
-                    anchors.centerIn: parent
-                    visible: !input.text.length
-                    text: "Пароль"; size: 14; w: 500; color: root.fgSurfaceVar
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: root.state_ === "busy" ? "Проверка…" : root.state_ === "leaving" ? "Добро пожаловать"
+                        : root.bad ? "Неверный пароль" : root.user ? root.user.name + " · WynlandOS" : ""
+                    size: 14; w: 600; topPadding: root.s(4)
+                    color: root.bad ? root.error : root.fgSurfaceVar
                 }
-                // the keys themselves: a hidden field (the layouts, the input methods)
-                TextInput {
-                    id: input
-                    width: 1; height: 1; opacity: 0
-                    echoMode: TextInput.Password
-                    enabled: root.state_ === "input"
-                    onTextEdited: { root.bad = false; idle.restart(); }
-                    onAccepted: root.submit()
-                    Keys.onEscapePressed: root.sleep_()
-                    Keys.onLeftPressed: e => { if (!text) root.pick(-1); else e.accepted = false; }
-                    Keys.onRightPressed: e => { if (!text) root.pick(1); else e.accepted = false; }
+                Item { width: 1; height: root.s(26) }
+                Rectangle {
+                    id: field
+                    width: parent.width; height: root.s(58); radius: height / 2
+                    color: root.surfaceHighest
+                    border.width: root.state_ === "idle" ? 0 : 2
+                    border.color: root.bad ? root.error : root.primary
+                    transform: Translate { id: sh }
+                    SequentialAnimation {
+                        id: shake
+                        NumberAnimation { target: sh; property: "x"; to: -10; duration: 40 }
+                        NumberAnimation { target: sh; property: "x"; to: 10; duration: 70 }
+                        NumberAnimation { target: sh; property: "x"; to: -8; duration: 70 }
+                        NumberAnimation { target: sh; property: "x"; to: 6; duration: 70 }
+                        NumberAnimation { target: sh; property: "x"; to: 0; duration: 60 }
+                    }
+                    Icon { x: root.s(18); anchors.verticalCenter: parent.verticalCenter; text: "key"; fill: true; size: 22; color: root.bad ? root.error : root.fgSurfaceVar }
+                    Row {
+                        x: root.s(52); anchors.verticalCenter: parent.verticalCenter; spacing: root.s(7)
+                        Repeater {
+                            model: input.text.length
+                            Rectangle {
+                                width: root.s(11); height: width; radius: width / 2; color: root.fgSurface
+                                scale: 0
+                                Component.onCompleted: scale = 1
+                                Behavior on scale { NumberAnimation { duration: 350; easing.type: Easing.BezierSpline; easing.bezierCurve: root.spring } }
+                            }
+                        }
+                    }
+                    Label {
+                        x: root.s(52); anchors.verticalCenter: parent.verticalCenter
+                        visible: !input.text.length
+                        text: root.state_ === "idle" ? "Нажмите любую клавишу" : "Пароль"; size: 15; w: 500; color: root.fgSurfaceVar
+                    }
+                    // go: the field's end
+                    Rectangle {
+                        width: root.s(46); height: width; radius: gm.containsMouse ? root.s(15) : width / 2
+                        anchors.right: parent.right; anchors.rightMargin: root.s(6); anchors.verticalCenter: parent.verticalCenter
+                        color: root.state_ === "busy" ? root.surfaceHigh : root.primary
+                        scale: gm.pressed ? .9 : 1
+                        Behavior on radius { NumberAnimation { duration: 350; easing.type: Easing.BezierSpline; easing.bezierCurve: root.spring } }
+                        Behavior on scale { NumberAnimation { duration: 250; easing.type: Easing.BezierSpline; easing.bezierCurve: root.spring } }
+                        Icon {
+                            anchors.centerIn: parent; size: 24; fill: true
+                            text: root.state_ === "busy" ? "progress_activity" : "arrow_forward"
+                            color: root.state_ === "busy" ? root.fgSurfaceVar : root.fgPrimary
+                            RotationAnimation on rotation { running: root.state_ === "busy"; from: 0; to: 360; duration: 900; loops: Animation.Infinite }
+                        }
+                        MouseArea { id: gm; anchors.fill: parent; hoverEnabled: true; onClicked: { root.wake(); root.submit(); } }
+                    }
+                    // the keys themselves: a hidden field (the layouts, the input methods)
+                    TextInput {
+                        id: input
+                        width: 1; height: 1; opacity: 0
+                        echoMode: TextInput.Password
+                        enabled: root.state_ === "input"
+                        onTextEdited: { root.bad = false; idle.restart(); }
+                        onAccepted: root.submit()
+                        Keys.onEscapePressed: root.sleep_()
+                        Keys.onLeftPressed: e => { if (!text) root.pick(-1); else e.accepted = false; }
+                        Keys.onRightPressed: e => { if (!text) root.pick(1); else e.accepted = false; }
+                    }
                 }
-            }
-            Item { width: 1; height: root.s(32) }
-            Row {
-                anchors.horizontalCenter: parent.horizontalCenter
-                spacing: root.s(10)
-                Chip { icon: "group"; text: root.users.length > 1 ? (root.current + 1) + " из " + root.users.length : "1 учётная запись"; small: true }
-                Chip { icon: "schedule"; text: Qt.formatTime(root.now, "hh:mm"); small: true }
+                Item { width: 1; height: root.s(22) }
+                Row {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    spacing: root.s(10)
+                    Chip { icon: "group"; text: root.users.length > 1 ? (root.current + 1) + " из " + root.users.length : "1 учётная запись" }
+                    Chip { icon: "language"; text: "RU" }
+                }
             }
         }
     }
 
-    // ---- any key or click brings the panel up
+    // ---- any key or click wakes the field
     Item {
         id: keys
         anchors.fill: parent
@@ -297,27 +340,16 @@ Window {
         verticalAlignment: Text.AlignVCenter
         horizontalAlignment: Text.AlignHCenter
     }
-    // the clock's digits: heavy, tight, a hard shadow 4 px under them
-    component Big: Item {
-        property alias text: bt.text
-        property alias color: bt.color
-        width: bt.implicitWidth; height: bt.implicitHeight * .9
-        Label { x: 0; y: root.s(4); text: bt.text; size: 190; w: 800; font.letterSpacing: root.s(-7.6); color: Qt.rgba(0, 0, 0, .32); font.features: { "tnum": 1 } }
-        Label { id: bt; size: 190; w: 800; font.letterSpacing: root.s(-7.6); font.features: { "tnum": 1 } }
-    }
     component Chip: Rectangle {
         id: ch
         property string icon
         property string text
-        property bool bad: false
-        property bool small: false
-        width: Math.max(root.s(small ? 120 : 185), cr.implicitWidth + root.s(28)); height: root.s(44); radius: root.s(16)
-        color: bad ? root.errorContainer : root.alpha(root.surfaceHigh, .9)
-        Behavior on color { ColorAnimation { duration: 300 } }
+        width: cr.implicitWidth + root.s(28); height: root.s(40); radius: root.s(14)
+        color: root.alpha(root.surfaceHigh, .9)
         Row {
-            id: cr; anchors.centerIn: parent; spacing: root.s(8)
-            Icon { text: ch.icon; fill: true; size: 19; color: ch.bad ? root.error : root.primary }
-            Label { text: ch.text; size: 14; anchors.verticalCenter: parent.verticalCenter; width: Math.min(implicitWidth, root.s(140)) }
+            id: cr; anchors.centerIn: parent; spacing: root.s(7)
+            Icon { text: ch.icon; fill: true; size: 18; color: root.primary }
+            Label { text: ch.text; size: 13; anchors.verticalCenter: parent.verticalCenter; color: root.fgSurfaceVar }
         }
     }
     component Arrow: Rectangle {

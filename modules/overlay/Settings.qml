@@ -6,6 +6,7 @@ import Quickshell.Io
 import Quickshell.Hyprland
 import qs.components
 import qs.services
+import "../../wynlogin"
 
 // The settings, the prototype's (settings.js, shell.css #settings): a side
 // list of pages on the surface, a search, the page in groups of rows --
@@ -29,6 +30,7 @@ Item {
         { k: "bar", n: "Панель", i: "toolbar" }, { k: "dock", n: "Док", i: "dock_to_bottom" },
         { k: "launcher", n: "Лаунчер", i: "apps" }, { k: "desk", n: "Рабочий стол", i: "widgets" },
         { k: "notif", n: "Уведомления", i: "notifications" }, { k: "sound", n: "Звук", i: "volume_up" },
+        { k: "login", n: "Экран входа", i: "login" },
         { k: "about", n: "О системе", i: "info" }
     ]
     readonly property var cfg: Config.data
@@ -144,7 +146,7 @@ Item {
     }
     IconButton { anchors.right: parent.right; anchors.top: parent.top; anchors.margins: 16; icon: "close"; onClicked: Ui.settings = false }
 
-    function pageOf(k) { return ({ styles: styles, look: look, bar: bar, dock: dock, launcher: launcher, desk: desk, notif: notif, sound: sound, about: about })[k] || null; }
+    function pageOf(k) { return ({ styles: styles, look: look, bar: bar, dock: dock, launcher: launcher, desk: desk, notif: notif, sound: sound, login: login, about: about })[k] || null; }
 
     // ---- the pieces (shell.css: .sgroup, .srow, .seg, .switch, .srange, .mini, .posmap) ----
     component Group: Rectangle {
@@ -768,6 +770,117 @@ Item {
                     Range { path: "notif.secs"; lo: 3; hi: 12; step: 1; unit: " с" } }
                 SRow { icon: "science"; title: "Проверить"; kw: "Показать тестовое уведомление"
                     Mini { icon: "notifications"; text: "Показать"; onClicked: Notifs.test("Тестовое уведомление", "Вот так оно выглядит и вот здесь появляется.") } }
+            }
+        }
+    }
+
+    // ---- Экран входа (wynlogin's xvlet skin): this account's look ----
+    Component {
+        id: login
+        Column {
+            id: lg
+            spacing: 12
+            readonly property var lk: LoginLook.data
+            readonly property var meta: LoginLook.scenes.find(m => m.id === lk.scene) || null
+            readonly property real hue: pvScene.item ? pvScene.item.hue : 355
+            // the preview: the login card in small, alive -- the scene, the clock as chosen
+            Item {
+                width: parent.width; height: Math.round(width * .44)
+                visible: root.query === ""
+                RectangularShadow { anchors.fill: pv; radius: 26; blur: 40; offset.y: 14; spread: -10; color: Theme.shadow }
+                Item {
+                    id: pv
+                    anchors.fill: parent
+                    layer.enabled: true
+                    layer.effect: MultiEffect { maskEnabled: true; maskSource: pvMask; maskThresholdMin: .5; maskSpreadAtMin: 1 }
+                    Image { anchors.fill: parent; source: LoginLook.sceneUrl(lg.lk.scene) + "room.png"; fillMode: Image.PreserveAspectCrop }
+                    Rectangle { anchors.fill: parent; color: Qt.rgba(0, 0, 0, .45) }
+                    Item {
+                        id: pvArt
+                        width: Math.round(parent.width * .62); height: parent.height
+                        clip: true
+                        Loader {
+                            id: pvScene
+                            source: LoginLook.sceneUrl(lg.lk.scene) + "Scene.qml"
+                            readonly property real k: item ? Math.max(pvArt.width / item.width, pvArt.height / item.height) : 1
+                            x: item ? (pvArt.width - item.width * k) / 2 : 0
+                            y: item ? (pvArt.height - item.height * k) * .6 : 0
+                            onLoaded: { item.transformOrigin = Item.TopLeft; item.scale = Qt.binding(() => pvScene.k); item.running = Qt.binding(() => pv.visible); }
+                        }
+                        Clock {
+                            anchors.fill: parent
+                            style: lg.lk.clock; align: lg.lk.clockPos; showDate: lg.lk.date !== false
+                            k: pvArt.height / 560
+                            ink: pvScene.item && !pvScene.item.lightSky ? Theme.oklch(96, .03, lg.hue) : Theme.oklch(31, .06, lg.hue)
+                        }
+                    }
+                    // the panel, in small
+                    Column {
+                        x: pvArt.width + (parent.width - pvArt.width - width) / 2; anchors.verticalCenter: parent.verticalCenter
+                        width: (parent.width - pvArt.width) * .7; spacing: 8
+                        Rectangle {
+                            width: 54; height: 54; radius: 27; anchors.horizontalCenter: parent.horizontalCenter
+                            color: Theme.oklch(38, .08, lg.hue); border.width: 2; border.color: Theme.oklch(82, .09, lg.hue)
+                            Label { anchors.centerIn: parent; text: (LoginLook.user || "?")[0].toUpperCase(); size: 22; w: 750; color: "white" }
+                        }
+                        Label { anchors.horizontalCenter: parent.horizontalCenter; text: LoginLook.user; size: 14; w: 700; color: "white" }
+                        Rectangle { width: parent.width; height: 26; radius: 13; color: Qt.rgba(1, 1, 1, .14)
+                            Label { x: 12; anchors.verticalCenter: parent.verticalCenter; text: "Пароль"; size: 11; color: Qt.rgba(1, 1, 1, .7) } }
+                    }
+                }
+                Item { id: pvMask; anchors.fill: parent; visible: false; layer.enabled: true
+                    Rectangle { anchors.fill: parent; radius: 26 } }
+            }
+            Group {
+                title: "Сцена"
+                SRow { icon: "landscape"; title: "Сцена за часами"; kw: "экран входа wynlogin сцена логин катана бамбук кот фудзи дождь зима кои"
+                    Label { text: lg.meta ? lg.meta.title : ""; size: 13; w: 600; dim: true } }
+                // the scenes: their pictures, the chosen one ringed
+                Flow {
+                    width: parent.width; spacing: 12; leftPadding: 14; rightPadding: 14; topPadding: 4; bottomPadding: 12
+                    visible: root.query === ""
+                    Repeater {
+                        model: LoginLook.scenes
+                        Item {
+                            id: scc
+                            required property var modelData
+                            readonly property bool on: lg.lk.scene === modelData.id
+                            width: 168; height: 126
+                            Rectangle {
+                                anchors.fill: parent; anchors.margins: -4; radius: 22
+                                color: "transparent"; border.width: 3; border.color: Theme.primary
+                                visible: scc.on
+                            }
+                            Item {
+                                anchors.fill: parent
+                                scale: tm.pressed ? .95 : 1
+                                Behavior on scale { SpringAnim { ms: 300 } }
+                                layer.enabled: true
+                                layer.effect: MultiEffect { maskEnabled: true; maskSource: thumbMask; maskThresholdMin: .5; maskSpreadAtMin: 1 }
+                                Image { anchors.fill: parent; source: LoginLook.sceneUrl(scc.modelData.id) + "thumb.png"; fillMode: Image.PreserveAspectCrop; sourceSize.width: 340 }
+                                Rectangle { anchors.left: parent.left; anchors.right: parent.right; anchors.bottom: parent.bottom; height: 34
+                                    gradient: Gradient { GradientStop { position: 0; color: "transparent" } GradientStop { position: 1; color: Qt.rgba(0, 0, 0, .6) } } }
+                                Label { x: 10; anchors.bottom: parent.bottom; anchors.bottomMargin: 7; width: parent.width - 20; text: scc.modelData.title; size: 11.5; w: 650; color: "white" }
+                            }
+                            Item { id: thumbMask; anchors.fill: parent; visible: false; layer.enabled: true
+                                Rectangle { anchors.fill: parent; radius: 18 } }
+                            MouseArea { id: tm; anchors.fill: parent; onClicked: { Sfx.ui("click"); LoginLook.set("scene", scc.modelData.id); } }
+                        }
+                    }
+                }
+            }
+            Group {
+                title: "Часы"
+                SRow { icon: "schedule"; title: "Стиль"; kw: "экран входа часы крупные вытянутые тонкие стрелочные"
+                    Seg { model: [{ k: "big", n: "Крупные" }, { k: "tall", n: "Вытянутые" }, { k: "thin", n: "Тонкие" }, { k: "analog", n: "Стрелки" }]
+                          value: lg.lk.clock; onPicked: k => LoginLook.set("clock", k) } }
+                SRow { icon: "format_align_left"; title: "Положение"; kw: "экран входа часы слева центр справа"
+                    Seg { model: [{ k: "left", n: "Слева" }, { k: "center", n: "По центру" }, { k: "right", n: "Справа" }]
+                          value: lg.lk.clockPos; onPicked: k => LoginLook.set("clockPos", k) } }
+                SRow { icon: "calendar_today"; title: "Дата"; kw: "экран входа дата день недели"
+                    Toggle { checked: lg.lk.date !== false; onToggled: v => LoginLook.set("date", v) } }
+                SRow { icon: "person"; title: "Только для вас"; kw: "экран входа учётная запись"
+                    Label { text: "Видно, когда на экране входа выбраны вы"; size: 12.5; dim: true } }
             }
         }
     }
