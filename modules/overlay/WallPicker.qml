@@ -93,7 +93,12 @@ Item {
                 readonly property int ad: Math.abs(d)
                 readonly property bool isCur: d === 0
                 width: isCur ? 560 : 300; height: 420
-                x: track.width / 2 - width / 2 + (d === 0 ? 0 : Math.sign(d) * (380 + (ad - 1) * 190))
+                // its place: the middle of the track, its own middle there
+                // (the width springs too) plus the offset, which springs alone --
+                // a Behavior on x itself restarted with every frame of the
+                // width's spring, and the cards slid away
+                property real off: d === 0 ? 0 : Math.sign(d) * (380 + (ad - 1) * 190)
+                x: track.width / 2 - width / 2 + off
                 z: 100 - ad
                 scale: isCur ? 1.06 : Math.max(.7, 1 - ad * .08)
                 // far ones: gone, not just clear (they lay over the desktop)
@@ -103,7 +108,7 @@ Item {
                 // the chosen one changes, never in from the left edge
                 property bool placed: false
                 Component.onCompleted: Qt.callLater(() => placed = true)
-                Behavior on x { enabled: card.placed; SpringAnim { ms: 600 } }
+                Behavior on off { enabled: card.placed; SpringAnim { ms: 600 } }
                 Behavior on width { SpringAnim { ms: 500 } }
                 Behavior on scale { SpringAnim { ms: 600 } }
                 Behavior on opacity { enabled: card.placed; NumberAnimation { duration: 400 } }
