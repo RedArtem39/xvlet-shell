@@ -51,15 +51,16 @@ PanelWindow {
     Rectangle {
         id: card
         width: 384; height: 276
-        x: root.side === "right" ? parent.width - width - 14 : 14
+        // against the screen's edge, rounded inside only
+        x: root.side === "right" ? parent.width - width : 0
         anchors.verticalCenter: parent.verticalCenter
-        radius: Theme.r
         color: Theme.surfaceLow
-        border.width: 1; border.color: Theme.alpha(Theme.fgSurface, .06)
+        topLeftRadius: root.side === "right" ? Theme.r : 0; bottomLeftRadius: topLeftRadius
+        topRightRadius: root.side === "left" ? Theme.r : 0; bottomRightRadius: topRightRadius
         opacity: root.open ? 1 : 0
         visible: opacity > 0.01
         Behavior on opacity { SmoothAnim { ms: 220 } }
-        transform: Translate { x: root.open ? 0 : 60 * root.dir; Behavior on x { SmoothAnim { ms: 380 } } }
+        transform: Translate { x: root.open ? 0 : card.width * root.dir; Behavior on x { SmoothAnim { ms: 380 } } }
         HoverHandler { onHoveredChanged: if (hovered) closeLater.stop(); else closeLater.restart() }
 
         Column {

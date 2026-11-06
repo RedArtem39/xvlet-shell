@@ -36,7 +36,7 @@ PanelWindow {
     color: "transparent"
     implicitWidth: body.width + 28
     // only the edge's strip takes the pointer until the pills are out
-    mask: Region { item: root.open ? body : trigger }
+    mask: Region { item: root.open ? sheet : trigger }
 
     onAllowedChanged: if (!allowed) open = false
     Connections { target: Ui; function onEdgePeekChanged() { root.open = Ui.edgePeek === "sliders" && root.allowed; } }
@@ -52,16 +52,30 @@ PanelWindow {
     }
     Timer { id: closeLater; interval: 700; onTriggered: root.open = false }
 
+    // the sheet they sit on: against the screen's edge, rounded inside only,
+    // coming out from behind the edge
+    Rectangle {
+        id: sheet
+        x: root.side === "right" ? parent.width - width : 0
+        y: body.y - 12
+        width: body.width + 24; height: body.height + 24
+        color: Theme.surfaceLow
+        topLeftRadius: root.side === "right" ? Theme.r : 0; bottomLeftRadius: topLeftRadius
+        topRightRadius: root.side === "left" ? Theme.r : 0; bottomRightRadius: topRightRadius
+        opacity: body.opacity
+        visible: body.visible
+        transform: Translate { x: root.open ? 0 : sheet.width * root.dir; Behavior on x { SmoothAnim { ms: 380 } } }
+        HoverHandler { onHoveredChanged: if (hovered) closeLater.stop(); else closeLater.restart() }
+    }
     Row {
         id: body
-        x: root.side === "right" ? parent.width - width - 14 : 14
+        x: root.side === "right" ? parent.width - width - 12 : 12
         anchors.verticalCenter: parent.verticalCenter
         spacing: 10
         opacity: root.open ? 1 : 0
         visible: opacity > 0.01
         Behavior on opacity { SmoothAnim { ms: 220 } }
-        transform: Translate { x: root.open ? 0 : 60 * root.dir; Behavior on x { SmoothAnim { ms: 380 } } }
-        HoverHandler { onHoveredChanged: if (hovered) closeLater.stop(); else closeLater.restart() }
+        transform: Translate { x: root.open ? 0 : sheet.width * root.dir; Behavior on x { SmoothAnim { ms: 380 } } }
 
         Repeater {
             model: root.pills
@@ -75,8 +89,7 @@ PanelWindow {
                     if (vol) Audio.setVolume(t); else Brightness.set(Math.max(.02, t));
                 }
                 width: 64; height: 300; radius: 32
-                color: Theme.surfaceLow
-                border.width: 1; border.color: Theme.alpha(Theme.fgSurface, .06)
+                color: Theme.surfaceMid
                 MIcon {
                     anchors.horizontalCenter: parent.horizontalCenter; y: 14
                     text: pill.vol ? Audio.icon : "light_mode"; fill: true; size: 24; color: Theme.fgSurfaceVar
