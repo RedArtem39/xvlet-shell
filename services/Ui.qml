@@ -22,6 +22,7 @@ Singleton {
     property bool editing: false
     property string osd: ""          // "volume", "brightness"
     property string edgePeek: ""     // an edge panel brought out without the pointer (ipc: edge sliders|system)
+    property bool dockLift: false    // the pointer at the dock's edge over windows (DockEdge.qml): the dock comes up
     property bool edgeOpen: false    // the right edge's sliders are out (modules/notices/EdgeSliders.qml): no OSD over them
     // the desktop's widgets are seen: no window on this workspace, or the
     // widgets being edited. Their idle motion (the waves, the clock's second

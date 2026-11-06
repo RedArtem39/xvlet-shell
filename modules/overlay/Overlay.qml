@@ -17,11 +17,18 @@ PanelWindow {
     readonly property real barThick: (bcfg.style === "islands" || bcfg.style === "solid") ? bcfg.height + 10 : bcfg.height
     readonly property bool open: Ui.anyOpen || Ui.settings
 
-    visible: open
+    // made once and kept: closed, it is clear and takes no pointer and no
+    // keys (its surface and GPU buffers made and dropped at every popout
+    // was where the laptop's widgets got eaten and the shell stalled after
+    // many taps)
+    visible: true
+    mask: open ? whole : none
+    Region { id: whole; item: root.contentItem }
+    Region { id: none }
     WlrLayershell.namespace: "xvlet-overlay"
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.exclusionMode: ExclusionMode.Ignore
-    WlrLayershell.keyboardFocus: Ui.launcher || Ui.settings || Ui.wallpick || Ui.pop === "session" ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.OnDemand
+    WlrLayershell.keyboardFocus: !open ? WlrKeyboardFocus.None : Ui.launcher || Ui.settings || Ui.wallpick || Ui.pop === "session" ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.OnDemand
     anchors { top: true; bottom: true; left: true; right: true }
     color: "transparent"
 

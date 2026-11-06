@@ -29,11 +29,10 @@ PanelWindow {
     WlrLayershell.namespace: "xvlet-edge-system"
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.exclusionMode: ExclusionMode.Ignore
-    anchors { right: side === "right"; left: side === "left" }
+    anchors { top: true; bottom: true; right: side === "right"; left: side === "left" }
     margins { right: side === "right" ? edgeIn : 0; left: side === "left" ? edgeIn : 0 }
     color: "transparent"
     implicitWidth: card.width + 28
-    implicitHeight: card.height + 40
     mask: Region { item: root.open ? card : trigger }
 
     onAllowedChanged: if (!allowed) open = false
@@ -42,7 +41,9 @@ PanelWindow {
     Item {
         id: trigger
         x: root.side === "right" ? parent.width - width : 0
-        width: 6; height: parent.height
+        // (the middle half of the edge)
+        y: parent.height / 4
+        width: 6; height: parent.height / 2
         HoverHandler { onHoveredChanged: if (hovered && root.allowed) { root.open = true; closeLater.stop(); } }
     }
     Timer { id: closeLater; interval: 700; onTriggered: root.open = false }

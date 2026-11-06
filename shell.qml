@@ -91,6 +91,7 @@ ShellRoot {
             Frame { screen: s.modelData }
             Bar { screen: s.modelData }
             Dock { screen: s.modelData }
+            DockEdge { screen: s.modelData }
             Overlay { screen: s.modelData }
             Notices { screen: s.modelData }
             EdgeSliders { screen: s.modelData }

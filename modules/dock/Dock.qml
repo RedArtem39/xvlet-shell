@@ -29,15 +29,16 @@ PanelWindow {
 
     visible: dcfg.on
     WlrLayershell.namespace: "xvlet-dock"
-    WlrLayershell.layer: WlrLayer.Top
     color: "transparent"
     anchors { bottom: pos === "bottom"; top: pos === "top"; left: pos === "left"; right: pos === "right" }
     margins { bottom: pos === "bottom" ? barOff : 0; top: pos === "top" ? barOff : 0; left: pos === "left" ? barOff : 0; right: pos === "right" ? barOff : 0 }
-    // its room kept free of windows whenever it is always there: the strip,
-    // and the attached/floating dock without autohide (it lay over windows)
-    readonly property bool reserve: !hidden && (strip || dcfg.autohide === "off")
-    exclusiveZone: reserve ? thick : 0
-    exclusionMode: reserve ? ExclusionMode.Normal : ExclusionMode.Ignore
+    // only the strip keeps its room from the windows; the attached and the
+    // floating dock lie under them (the windows cover it) and come up over
+    // them while the pointer is at the edge or on it (DockEdge.qml)
+    exclusiveZone: strip && !hidden ? thick : 0
+    exclusionMode: strip ? ExclusionMode.Normal : ExclusionMode.Ignore
+    readonly property bool under: !strip && busy && !hover && !Ui.dockLift && !Ui.editing
+    WlrLayershell.layer: under ? WlrLayer.Bottom : WlrLayer.Top
     // the window: the dock, its fillets, room for the zoomed icons and the tips
     implicitWidth: vert ? thick + 160 : (strip ? (screen ? screen.width : 1920) : body.width + rad * 2 + 4)
     implicitHeight: vert ? (strip ? (screen ? screen.height : 1080) : body.height + rad * 2 + 4) : thick + 70
@@ -61,7 +62,11 @@ PanelWindow {
         HoverHandler { onHoveredChanged: if (hovered) root.hover = true }
     }
 
-    Timer { id: leave; interval: 450; onTriggered: if (!bodyHover.hovered) root.hover = false }
+    Timer { id: leave; interval: 450; onTriggered: if (!bodyHover.hovered) { root.hover = false; Ui.dockLift = false; } }
+    // brought up from the edge (DockEdge.qml): down again unless the
+    // pointer goes onto it within a moment
+    Connections { target: Ui; function onDockLiftChanged() { if (Ui.dockLift) liftLeave.restart(); } }
+    Timer { id: liftLeave; interval: 1500; onTriggered: if (!bodyHover.hovered && !root.hover) Ui.dockLift = false }
 
     Item {
         id: body
