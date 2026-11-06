@@ -14,7 +14,7 @@ PanelWindow {
     readonly property var bcfg: Config.data.bar
     readonly property string bpos: bcfg.pos
     readonly property bool bvert: bpos === "left" || bpos === "right"
-    readonly property real barThick: bcfg.style === "islands" ? bcfg.height + 10 : bcfg.height
+    readonly property real barThick: (bcfg.style === "islands" || bcfg.style === "solid") ? bcfg.height + 10 : bcfg.height
     readonly property bool open: Ui.anyOpen || Ui.settings
 
     visible: open
@@ -42,15 +42,32 @@ PanelWindow {
         Keys.onEscapePressed: { if (Ui.wallpick) Ui.wallpick = false; else if (Ui.anyOpen) Ui.closeAll(); else Ui.settings = false; }
     }
 
+    // where each popout's button was when it opened: its own, kept -- with
+    // one shared Ui.popX, opening the quick settings moved the dashboard
+    // (fading out, or hidden) over to the bell, and back, a little each time
+    property real dashAt: 960
+    property real qsAt: 1800
+    Connections {
+        target: Ui
+        function onPopChanged() {
+            if (Ui.pop === "dash") root.dashAt = Ui.popX;
+            else if (Ui.pop === "qs") root.qsAt = Ui.popX;
+        }
+        function onPopXChanged() {
+            if (Ui.pop === "dash") root.dashAt = Ui.popX;
+            else if (Ui.pop === "qs") root.qsAt = Ui.popX;
+        }
+    }
+
     // a popout comes out of the bar at its button
-    function popPos(w, h) {
-        const a = Ui.popX, m = 8, gap = barThick + 8;
+    function popPos(a, w, h) {
+        const m = 8, gap = barThick + 8;
         if (!bvert) return Qt.point(Math.max(m, Math.min(width - w - m, a - w / 2)), bpos === "top" ? gap : height - gap - h);
         return Qt.point(bpos === "left" ? gap : width - gap - w, Math.max(m, Math.min(height - h - m, a - h / 2)));
     }
 
-    Dashboard { id: dash; shown: Ui.pop === "dash"; readonly property point p: root.popPos(width, height); x: p.x; y: p.y; origin: root.bpos }
-    QuickSettings { id: qs; shown: Ui.pop === "qs"; readonly property point p: root.popPos(width, height); x: p.x; y: p.y; origin: root.bpos }
+    Dashboard { id: dash; shown: Ui.pop === "dash"; readonly property point p: root.popPos(root.dashAt, width, height); x: p.x; y: p.y; origin: root.bpos }
+    QuickSettings { id: qs; shown: Ui.pop === "qs"; readonly property point p: root.popPos(root.qsAt, width, height); x: p.x; y: p.y; origin: root.bpos }
     Session { anchors.fill: parent; shown: Ui.pop === "session" }
     Launcher { anchors.fill: parent; shown: Ui.launcher }
     WallPicker { anchors.fill: parent; shown: Ui.wallpick }

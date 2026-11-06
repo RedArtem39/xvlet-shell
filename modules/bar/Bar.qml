@@ -7,6 +7,7 @@ import qs.services
 // The bar, built from the settings: its pieces (modules) in three zones --
 // start, centre, end -- on any edge, in one of three styles (Exo's):
 //   islands   floating zones of glass, a gap from the edge
+//   solid     one glass strip the whole length, the same gap
 //   flush     one surface strip, flush with the edge (the frame's)
 //   seg       zones hanging from the edge, concave fillets where they meet it
 // Its thickness is kept free of windows.
@@ -17,7 +18,8 @@ PanelWindow {
     readonly property string pos: bcfg.pos
     readonly property bool vert: pos === "left" || pos === "right"
     readonly property real bh: bcfg.height
-    readonly property bool islands: bcfg.style === "islands"
+    // (islands and the solid strip float: the gap from the edge)
+    readonly property bool islands: bcfg.style === "islands" || bcfg.style === "solid"
     readonly property real thick: islands ? bh + 10 : bh
     readonly property var order: ["logo", "ws", "tasks", "media", "tray", "sysmon", "weather", "status", "bell", "clock", "power"]
     function keys(z) { return order.filter(k => bcfg.mods[k] === z); }
@@ -46,6 +48,14 @@ PanelWindow {
         width: root.vert ? root.bh : root.width - (root.islands ? 24 : 0)
         height: root.vert ? root.height - (root.islands ? 24 : 0) : root.bh
 
+        // solid: one strip under all the zones
+        Rectangle {
+            anchors.fill: parent
+            visible: root.bcfg.style === "solid"
+            radius: root.bh / 2
+            color: Theme.glass
+            Behavior on color { ColorAnim {} }
+        }
         Zone { id: zs; bar: root; which: "start" }
         Zone { id: zc; bar: root; which: "center" }
         Zone { id: ze; bar: root; which: "end" }
@@ -73,7 +83,7 @@ PanelWindow {
         Rectangle {
             id: bg
             anchors.fill: parent
-            visible: zone.bar.bcfg.style !== "flush"
+            visible: zone.bar.bcfg.style === "islands" || zone.seg
             color: zone.seg ? Theme.surface : Theme.glass
             radius: zone.seg ? zone.fil : zone.bar.bh / 2
             Behavior on color { ColorAnim {} }

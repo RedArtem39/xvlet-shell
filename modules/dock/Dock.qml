@@ -21,7 +21,7 @@ PanelWindow {
     readonly property real rad: Theme.r
     readonly property bool strip: style === "strip"
     readonly property real thick: strip ? ds + 12 : ds + 20 + (style === "floating" ? 12 : 0)
-    readonly property real barOff: dcfg.pos === Config.data.bar.pos ? (Config.data.bar.style === "islands" ? Config.data.bar.height + 10 : Config.data.bar.height) : 0
+    readonly property real barOff: dcfg.pos === Config.data.bar.pos ? ((Config.data.bar.style === "islands" || Config.data.bar.style === "solid") ? Config.data.bar.height + 10 : Config.data.bar.height) : 0
 
     readonly property bool busy: !!Hyprland.focusedWorkspace && Hyprland.focusedWorkspace.toplevels.values.length > 0
     property bool hover: false
@@ -33,8 +33,11 @@ PanelWindow {
     color: "transparent"
     anchors { bottom: pos === "bottom"; top: pos === "top"; left: pos === "left"; right: pos === "right" }
     margins { bottom: pos === "bottom" ? barOff : 0; top: pos === "top" ? barOff : 0; left: pos === "left" ? barOff : 0; right: pos === "right" ? barOff : 0 }
-    exclusiveZone: strip && !hidden ? thick : 0
-    exclusionMode: strip ? ExclusionMode.Normal : ExclusionMode.Ignore
+    // its room kept free of windows whenever it is always there: the strip,
+    // and the attached/floating dock without autohide (it lay over windows)
+    readonly property bool reserve: !hidden && (strip || dcfg.autohide === "off")
+    exclusiveZone: reserve ? thick : 0
+    exclusionMode: reserve ? ExclusionMode.Normal : ExclusionMode.Ignore
     // the window: the dock, its fillets, room for the zoomed icons and the tips
     implicitWidth: vert ? thick + 160 : (strip ? (screen ? screen.width : 1920) : body.width + rad * 2 + 4)
     implicitHeight: vert ? (strip ? (screen ? screen.height : 1080) : body.height + rad * 2 + 4) : thick + 70
@@ -73,8 +76,10 @@ PanelWindow {
         transform: Translate {
             x: root.vert ? (root.hidden ? (root.pos === "left" ? -1 : 1) * (root.thick + 4) : 0) : 0
             y: !root.vert ? (root.hidden ? (root.pos === "bottom" ? 1 : -1) * (root.thick + 4) : 0) : 0
-            Behavior on x { SpringAnim { ms: 500 } }
-            Behavior on y { SpringAnim { ms: 500 } }
+            // rolled out and back, no overshoot: the spring made it jump past
+            // its place coming out of the edge and bounce back
+            Behavior on x { SmoothAnim { ms: 380 } }
+            Behavior on y { SmoothAnim { ms: 380 } }
         }
 
         // attached: the surface, the far corners round, fillets to the edge

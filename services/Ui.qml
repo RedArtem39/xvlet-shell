@@ -28,7 +28,7 @@ Singleton {
     readonly property bool deskLive: editing || !(Hyprland.focusedWorkspace && Hyprland.focusedWorkspace.toplevels.values.length > 0)
     readonly property bool anyOpen: pop !== "" || launcher || settings || wallpick
 
-    function toggle(p, x) { if (pop === p) pop = ""; else { pop = p; if (x !== undefined) popX = x; launcher = false; } }
+    function toggle(p, x) { if (pop === p) pop = ""; else { if (x !== undefined) popX = x; pop = p; launcher = false; } }
     function closeAll() { pop = ""; launcher = false; wallpick = false; }
     function openLauncher() { pop = ""; launcher = !launcher; }
     function openSettings(page) { closeAll(); if (page) settingsPage = page; settings = true; }

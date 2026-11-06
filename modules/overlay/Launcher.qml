@@ -22,7 +22,7 @@ Item {
     readonly property bool cats: lcfg.cats !== false
     readonly property string mode: /^[>=@:]/.test(raw) ? raw[0] : ""
     readonly property string q: (mode ? raw.slice(1) : raw).trim().toLowerCase()
-    readonly property real barT: bcfg.style === "islands" ? bcfg.height + 10 : bcfg.height
+    readonly property real barT: (bcfg.style === "islands" || bcfg.style === "solid") ? bcfg.height + 10 : bcfg.height
 
     visible: opacity > 0.01
     opacity: shown ? 1 : 0

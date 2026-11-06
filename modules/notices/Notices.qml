@@ -13,7 +13,7 @@ PanelWindow {
 
     readonly property string corner: Config.data.notif.pos
     readonly property var bcfg: Config.data.bar
-    readonly property real barThick: bcfg.style === "islands" ? bcfg.height + 10 : bcfg.height
+    readonly property real barThick: (bcfg.style === "islands" || bcfg.style === "solid") ? bcfg.height + 10 : bcfg.height
     function inset(edge) { return bcfg.pos === edge ? barThick : 0; }
 
     WlrLayershell.namespace: "xvlet-notices"
