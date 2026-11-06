@@ -42,12 +42,15 @@ PanelWindow {
     }
 
     Repeater {
-        model: root.list
+        // by count only: Config.set() makes a new config (and a new list)
+        // for any setting at all -- with the list itself as the model every
+        // widget was torn down and made again (its canvases, layers and
+        // GPU buffers) whatever changed. Each one reads its entry instead.
+        model: root.list.length
         Item {
             id: wg
-            required property var modelData
             required property int index
-            readonly property var w: modelData
+            readonly property var w: root.list[index] || ({ t: "", v: "", x: 0, y: 0, w: 0, h: 0 })
             readonly property bool picked: Ui.editing && root.sel === index
             x: w.x * root.k; y: w.y * root.k
             width: w.w * root.k; height: w.h * root.k
