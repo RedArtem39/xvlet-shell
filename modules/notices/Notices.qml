@@ -73,7 +73,7 @@ PanelWindow {
         x: root.width - width - 14 - root.inset("right") - 12
         y: (root.height - height) / 2
         color: Theme.surfaceMid
-        opacity: Ui.osd !== "" ? 1 : 0
+        opacity: Ui.osd !== "" && !Ui.edgeOpen ? 1 : 0
         scale: Ui.osd !== "" ? 1 : .9
         transform: Translate { x: Ui.osd !== "" ? 0 : 40; Behavior on x { SpringAnim { ms: 500 } } }
         visible: opacity > 0.01

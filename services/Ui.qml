@@ -21,6 +21,8 @@ Singleton {
     property bool locked: false
     property bool editing: false
     property string osd: ""          // "volume", "brightness"
+    property string edgePeek: ""     // an edge panel brought out without the pointer (ipc: edge sliders|system)
+    property bool edgeOpen: false    // the right edge's sliders are out (modules/notices/EdgeSliders.qml): no OSD over them
     // the desktop's widgets are seen: no window on this workspace, or the
     // widgets being edited. Their idle motion (the waves, the clock's second
     // hand, the sun) runs only then -- a moving widget redraws the whole

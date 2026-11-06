@@ -93,6 +93,8 @@ ShellRoot {
             Dock { screen: s.modelData }
             Overlay { screen: s.modelData }
             Notices { screen: s.modelData }
+            EdgeSliders { screen: s.modelData }
+            EdgeSystem { screen: s.modelData }
         }
     }
 
@@ -119,6 +121,8 @@ ShellRoot {
         function lock(): void { Ui.lock(); }
         function ws(n: int): void { Hyprland.dispatch("workspace " + n); }
         function edit(): void { Ui.editing = !Ui.editing; }
+        // the screen edges' panels out, as the pointer would bring them ("sliders", "system", "" none)
+        function edge(which: string): void { Ui.edgePeek = which; }
         function close(): void { Ui.closeAll(); Ui.settings = false; }
         function set(path: string, value: string): void { let v = value; try { v = JSON.parse(value); } catch (e) {} Config.set(path, v); }
         function notify(summary: string, body: string): void { Notifs.test(summary, body); }
