@@ -628,6 +628,11 @@ Item {
     // a theme's colours, as swatches (the prototype's themeSwatches)
     function swatches(t) {
         const v = Theme.paletteOf(t), dark = (t.mode || root.cfg.theme.mode) === "dark";
+        // Material You's own (lib/mcu.js), as the theme itself; the OKLCH
+        // formulas only if the library failed
+        const sc = Theme.schemeOf(t), C = a => Theme.argbColor(a);
+        if (sc) return { bg: C(sc.surfaceContainer), fg: C(sc.onSurface),
+                         strip: [C(sc.primary), C(sc.secondaryContainer), C(sc.tertiary), C(sc.primaryContainer), C(sc.surfaceContainerHighest)] };
         return {
             bg: dark ? Theme.oklch(22.5, v.cn, v.hn) : Theme.oklch(93.5, v.cn * .7, v.hn),
             fg: dark ? Theme.oklch(93, v.cn * .35, v.hn) : Theme.oklch(22, v.cn * .5, v.hn),
@@ -707,7 +712,7 @@ Item {
                     Repeater { model: Object.keys(Theme.schemes)
                         Rectangle { id: sc; required property string modelData
                             readonly property bool on: (Theme.now.scheme || "tonal") === modelData
-                            readonly property var sw: root.swatches({ h: Theme.now.h, c: Theme.now.c, scheme: modelData, mode: root.cfg.theme.mode })
+                            readonly property var sw: root.swatches({ h: Theme.now.h, c: Theme.now.c, argb: Theme.now.argb, scheme: modelData, mode: root.cfg.theme.mode })
                             width: (parent.width - 24) / 4; height: 92
                             radius: on || scm.containsMouse ? 30 : 20
                             color: on ? Theme.secondaryContainer : Theme.surfaceHigh

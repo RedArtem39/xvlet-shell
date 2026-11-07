@@ -3,13 +3,16 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import qs.services
+import "../lib/mcu.js" as Mcu
 
-// The look: Material 3 Expressive, as the prototype. Every colour is
-// oklch(tone, chroma, hue); a scheme makes the four tonal palettes --
-// primary, secondary, tertiary, neutral -- from one seed, as M3's dynamic
-// schemes do. The seed: one of the wallpaper's own colours (its pixels,
-// quantized, scored by chroma -- up to four distinct hues), a chosen hue,
-// or a saved theme. Qt has no OKLCH: oklch() turns it into sRGB.
+// The look: Material 3 Expressive. The colours are Material You's own:
+// Google's material-color-utilities (lib/mcu.js) -- the wallpaper's colours
+// scored as Android picks them (Score), a dynamic scheme from the seed
+// (TonalSpot, Vibrant, Expressive... the 2025 spec, M3 Expressive's), every
+// role from it. The seed: one of the wallpaper's (up to four), a chosen
+// hue, or a saved theme. The old OKLCH formulas stay as the fallback (and
+// for the few places that want a hue: pal, now.h). Qt has no OKLCH:
+// oklch() turns it into sRGB.
 Singleton {
     id: root
 
@@ -27,29 +30,24 @@ Singleton {
     // (Median cut gives buckets of about equal population: each of the 64
     // colours stands for as many pixels.)
     readonly property var wallSeeds: {
-        const cs = quant.colors || [], bins = new Array(72).fill(0), hsum = new Array(72).fill(0), csum = new Array(72).fill(0);
+        const cs = quant.colors || [], pop = new Map();
+        // (median cut: each of its colours stands for about as many pixels --
+        // the population Score wants)
         for (const c of cs) {
-            const o = toOklch(c.r, c.g, c.b);
-            if (o[1] < .025 || o[0] < .15 || o[0] > .95) continue;
-            const w = Math.pow(o[1], 1.5), bi = Math.floor(o[2] / 5) % 72;
-            bins[bi] += w; hsum[bi] += o[2] * w; csum[bi] += o[1] * w;
+            const a = Mcu.MCU.argbFromRgb(Math.round(c.r * 255), Math.round(c.g * 255), Math.round(c.b * 255));
+            pop.set(a, (pop.get(a) || 0) + 1);
         }
-        const sm = bins.map((_, k) => bins[(k + 71) % 72] * .5 + bins[k] + bins[(k + 1) % 72] * .5);
-        const order = sm.map((v, k) => k).sort((a, b) => sm[b] - sm[a]), seeds = [];
-        for (const k of order) {
-            if (sm[k] <= 0 || sm[k] < sm[order[0]] * .06 || seeds.length >= 4) break;
-            const h = bins[k] ? hsum[k] / bins[k] : k * 5 + 2.5;
-            if (seeds.some(s => Math.min(Math.abs(s.h - h), 360 - Math.abs(s.h - h)) < 35)) continue;
-            seeds.push({ h: Math.round(h), c: Math.max(.05, Math.min(.2, (csum[k] / (bins[k] || 1)) * 1.1)) });
-        }
-        return seeds.length ? seeds : [{ h: 285, c: .02 }];
+        let picks = [];
+        try { picks = pop.size ? Mcu.MCU.Score.score(pop, { desired: 4, fallbackColorARGB: 0xff6750a4, filter: true }) : []; } catch (e) { picks = []; }
+        const out = picks.map(a => { const o = toOklch(((a >> 16) & 255) / 255, ((a >> 8) & 255) / 255, (a & 255) / 255); return { argb: a, h: Math.round(o[2]), c: Math.max(.03, Math.min(.2, o[1])) }; });
+        return out.length ? out : [{ argb: 0xff6750a4, h: 285, c: .02 }];
     }
 
     // what is in force: a saved theme, the wallpaper's seed, or a chosen hue
     readonly property var now: {
         if (th.src === "saved" && th.saved && th.saved[th.active]) return th.saved[th.active];
         const seed = th.src === "custom" ? { h: th.custom, c: .14 } : (wallSeeds[th.seed] || wallSeeds[0]);
-        return { h: seed.h, c: seed.c, scheme: th.scheme, mode: th.mode };
+        return { h: seed.h, c: seed.c, argb: seed.argb, scheme: th.scheme, mode: th.mode };
     }
     readonly property bool dark: now.mode !== "light"
 
@@ -69,28 +67,47 @@ Singleton {
     }
     readonly property var pal: paletteOf(now)
 
+    // ---- Material You's scheme (lib/mcu.js) ----
+    // a theme {h, c, argb?, scheme, mode} -> its DynamicScheme (null: the
+    // library failed -- the OKLCH formulas below then)
+    function argbOf(col) { return Mcu.MCU.argbFromRgb(Math.round(col.r * 255), Math.round(col.g * 255), Math.round(col.b * 255)); }
+    function schemeOf(t) {
+        try {
+            const M = Mcu.MCU;
+            const kind = ({ tonal: M.SchemeTonalSpot, vibrant: M.SchemeVibrant, expressive: M.SchemeExpressive, fidelity: M.SchemeFidelity,
+                            neutral: M.SchemeNeutral, mono: M.SchemeMonochrome, fruit: M.SchemeFruitSalad, rainbow: M.SchemeRainbow })[t.scheme] || M.SchemeTonalSpot;
+            // (a hue with no colour of its own -- chosen, saved: as a vivid mid tone)
+            const seed = t.argb !== undefined ? t.argb : argbOf(oklch(65, Math.max(.1, t.c || .14), t.h));
+            return new kind(M.Hct.fromInt(seed), (t.mode || th.mode) !== "light", 0, "2025");
+        } catch (e) { console.warn("theme: material-color-utilities failed: " + e); return null; }
+    }
+    readonly property var dyn: schemeOf(now)
+    function argbColor(a, al) { return Qt.rgba(((a >> 16) & 255) / 255, ((a >> 8) & 255) / 255, (a & 255) / 255, al === undefined ? 1 : al); }
+    // a role of the scheme, or the fallback
+    function role(name, fb) { return dyn ? argbColor(dyn[name]) : fb; }
+
     // ---- the roles (shell.css :root[data-theme]) ----
-    readonly property color primary:              dark ? oklch(80, pal.cp, pal.hp) : oklch(45, pal.cp, pal.hp)
-    readonly property color fgPrimary:            dark ? oklch(25, pal.cp * .9, pal.hp) : oklch(100, 0, 0)
-    readonly property color primaryContainer:     dark ? oklch(36, pal.cp * .9, pal.hp) : oklch(89, pal.cp * .6, pal.hp)
-    readonly property color fgPrimaryContainer:   dark ? oklch(91, pal.cp * .5, pal.hp) : oklch(24, pal.cp * .8, pal.hp)
-    readonly property color secondaryContainer:   dark ? oklch(34, pal.cs, pal.hs) : oklch(90, pal.cs * .75, pal.hs)
-    readonly property color fgSecondaryContainer: dark ? oklch(90, pal.cs * .7, pal.hs) : oklch(26, pal.cs, pal.hs)
-    readonly property color tertiary:             dark ? oklch(80, pal.ct, pal.ht) : oklch(48, pal.ct, pal.ht)
-    readonly property color tertiaryContainer:    dark ? oklch(36, pal.ct * .9, pal.ht) : oklch(90, pal.ct * .65, pal.ht)
-    readonly property color fgTertiaryContainer:  dark ? oklch(91, pal.ct * .5, pal.ht) : oklch(26, pal.ct * .8, pal.ht)
-    readonly property color surface:              dark ? oklch(16.5, pal.cn * .8, pal.hn) : oklch(97.5, pal.cn * .45, pal.hn)
-    readonly property color surfaceLow:           dark ? oklch(19.5, pal.cn * .9, pal.hn) : oklch(95.5, pal.cn * .55, pal.hn)
-    readonly property color surfaceMid:           dark ? oklch(22.5, pal.cn, pal.hn) : oklch(93.5, pal.cn * .7, pal.hn)
-    readonly property color surfaceHigh:          dark ? oklch(26, pal.cn * 1.05, pal.hn) : oklch(91.5, pal.cn * .75, pal.hn)
-    readonly property color surfaceHighest:       dark ? oklch(30, pal.cn * 1.1, pal.hn) : oklch(89, pal.cn * .8, pal.hn)
-    readonly property color fgSurface:            dark ? oklch(93, pal.cn * .35, pal.hn) : oklch(22, pal.cn * .5, pal.hn)
-    readonly property color fgSurfaceVar:         dark ? oklch(78, pal.cn * .8, pal.hn) : oklch(42, pal.cn * .85, pal.hn)
-    readonly property color outline:              dark ? oklch(45, pal.cn * .9, pal.hn) : oklch(70, pal.cn * .7, pal.hn)
-    readonly property color glass:                dark ? oklch(19, pal.cn * .9, pal.hn, .82) : oklch(96, pal.cn * .5, pal.hn, .84)
+    readonly property color primary:              role("primary", dark ? oklch(80, pal.cp, pal.hp) : oklch(45, pal.cp, pal.hp))
+    readonly property color fgPrimary:            role("onPrimary", dark ? oklch(25, pal.cp * .9, pal.hp) : oklch(100, 0, 0))
+    readonly property color primaryContainer:     role("primaryContainer", dark ? oklch(36, pal.cp * .9, pal.hp) : oklch(89, pal.cp * .6, pal.hp))
+    readonly property color fgPrimaryContainer:   role("onPrimaryContainer", dark ? oklch(91, pal.cp * .5, pal.hp) : oklch(24, pal.cp * .8, pal.hp))
+    readonly property color secondaryContainer:   role("secondaryContainer", dark ? oklch(34, pal.cs, pal.hs) : oklch(90, pal.cs * .75, pal.hs))
+    readonly property color fgSecondaryContainer: role("onSecondaryContainer", dark ? oklch(90, pal.cs * .7, pal.hs) : oklch(26, pal.cs, pal.hs))
+    readonly property color tertiary:             role("tertiary", dark ? oklch(80, pal.ct, pal.ht) : oklch(48, pal.ct, pal.ht))
+    readonly property color tertiaryContainer:    role("tertiaryContainer", dark ? oklch(36, pal.ct * .9, pal.ht) : oklch(90, pal.ct * .65, pal.ht))
+    readonly property color fgTertiaryContainer:  role("onTertiaryContainer", dark ? oklch(91, pal.ct * .5, pal.ht) : oklch(26, pal.ct * .8, pal.ht))
+    readonly property color surface:              role("surface", dark ? oklch(16.5, pal.cn * .8, pal.hn) : oklch(97.5, pal.cn * .45, pal.hn))
+    readonly property color surfaceLow:           role("surfaceContainerLow", dark ? oklch(19.5, pal.cn * .9, pal.hn) : oklch(95.5, pal.cn * .55, pal.hn))
+    readonly property color surfaceMid:           role("surfaceContainer", dark ? oklch(22.5, pal.cn, pal.hn) : oklch(93.5, pal.cn * .7, pal.hn))
+    readonly property color surfaceHigh:          role("surfaceContainerHigh", dark ? oklch(26, pal.cn * 1.05, pal.hn) : oklch(91.5, pal.cn * .75, pal.hn))
+    readonly property color surfaceHighest:       role("surfaceContainerHighest", dark ? oklch(30, pal.cn * 1.1, pal.hn) : oklch(89, pal.cn * .8, pal.hn))
+    readonly property color fgSurface:            role("onSurface", dark ? oklch(93, pal.cn * .35, pal.hn) : oklch(22, pal.cn * .5, pal.hn))
+    readonly property color fgSurfaceVar:         role("onSurfaceVariant", dark ? oklch(78, pal.cn * .8, pal.hn) : oklch(42, pal.cn * .85, pal.hn))
+    readonly property color outline:              role("outlineVariant", dark ? oklch(45, pal.cn * .9, pal.hn) : oklch(70, pal.cn * .7, pal.hn))
+    readonly property color glass:                dyn ? argbColor(dyn.surfaceContainerLow, dark ? .82 : .84) : (dark ? oklch(19, pal.cn * .9, pal.hn, .82) : oklch(96, pal.cn * .5, pal.hn, .84))
     readonly property color scrim:                dark ? oklch(8, pal.cn * .7, pal.hn, .55) : oklch(30, pal.cn * .7, pal.hn, .35)
-    readonly property color error:                dark ? oklch(72, .16, 25) : oklch(52, .18, 25)
-    readonly property color errorContainer:       dark ? oklch(38, .12, 25) : oklch(90, .06, 25)
+    readonly property color error:                role("error", dark ? oklch(72, .16, 25) : oklch(52, .18, 25))
+    readonly property color errorContainer:       role("errorContainer", dark ? oklch(38, .12, 25) : oklch(90, .06, 25))
     readonly property color shadow:               dark ? oklch(4, .05, pal.hn, .7) : oklch(30, .05, pal.hn, .35)
     function alpha(c, a) { return Qt.rgba(c.r, c.g, c.b, a); }
     function mix(a, b, t) { return Qt.rgba(a.r + (b.r - a.r) * t, a.g + (b.g - a.g) * t, a.b + (b.b - a.b) * t, a.a + (b.a - a.a) * t); }
