@@ -396,13 +396,20 @@ Item {
             // wherever the pointer goes, until let go)
             grabPermissions: PointerHandler.CanTakeOverFromAnything | PointerHandler.TakeOverForbidden
             property var start: null
+            property var before: null                 // the parts as they were: let go outside them, back to this
             onActiveChanged: {
                 if (active) {
                     start = bb.chipAt(centroid.pressPosition);
-                    if (start) bb.dragKey = start.k;
+                    if (start) { before = bb.zones; bb.dragKey = start.k; }
                 } else {
-                    if (bb.dragKey !== "") { bb.dragKey = ""; bb.hoverZone = ""; bb.commit(); }
-                    start = null;
+                    if (bb.dragKey !== "") {
+                        // let go over a part: it stays there; anywhere else
+                        // on the page: back where it was taken from
+                        if (bb.zoneAt(centroid.position) === "" && before) bb.zones = before;
+                        else bb.commit();
+                        bb.dragKey = ""; bb.hoverZone = "";
+                    }
+                    start = null; before = null;
                 }
             }
             onCentroidChanged: {
