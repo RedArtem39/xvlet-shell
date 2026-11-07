@@ -837,6 +837,15 @@ Item {
                 BarBuilder {}
             }
             Group {
+                title: "Визуализатор от панели"
+                SRow { icon: "graphic_eq"; title: "Показывать"; kw: "Спектр звука растёт от края панели, под окнами"
+                    Sw { path: "bar.viz" } }
+                SRow { icon: "waves"; title: "Стиль"; visible: root.cfg.bar.viz && (root.query === "" || "стиль визуализатор".includes(root.query))
+                    Pick { path: "bar.vizStyle"; model: [{ k: "bars", n: "Столбики" }, { k: "wave", n: "Волна" }] } }
+                SRow { icon: "height"; title: "Высота"; visible: root.cfg.bar.viz && (root.query === "" || "высота визуализатор".includes(root.query))
+                    Range { path: "bar.vizH"; lo: 30; hi: 180; step: 2; unit: " px" } }
+            }
+            Group {
                 title: "Вид модулей"
                 SRow { icon: "workspaces"; title: "Рабочие столы"; kw: "Как показывать рабочие столы"
                     Pick { path: "bar.ws"; model: [{ k: "pill", n: "Пилюля" }, { k: "dots", n: "Точки" }, { k: "numbers", n: "Цифры" }] } }

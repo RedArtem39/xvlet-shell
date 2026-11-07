@@ -90,6 +90,7 @@ ShellRoot {
             Wallpaper { screen: s.modelData }
             Desktop { screen: s.modelData }
             Frame { screen: s.modelData }
+            BarViz { screen: s.modelData }
             Bar { screen: s.modelData }
             Dock { screen: s.modelData }
             DockEdge { screen: s.modelData }
