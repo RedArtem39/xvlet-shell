@@ -120,6 +120,11 @@ Item {
             x: side.width; width: parent.width - side.width; height: parent.height
             contentHeight: body.implicitHeight + 56
             boundsBehavior: Flickable.StopAtBounds
+            // no scrolling by dragging with the mouse (the wheel and the rail
+            // only): a module carried in the bar's constructor was taken
+            // over by the page the moment the pointer strayed, dropped, and
+            // the page went scrolling instead
+            acceptedButtons: Qt.NoButton
             clip: true
             Column {
                 id: body
@@ -387,8 +392,9 @@ Item {
             id: bdrag
             target: null
             dragThreshold: 5
-            // (once dragging, the page's list may not take it over)
-            grabPermissions: PointerHandler.CanTakeOverFromAnything
+            // (once dragging, nothing may take it over: it is carried
+            // wherever the pointer goes, until let go)
+            grabPermissions: PointerHandler.CanTakeOverFromAnything | PointerHandler.TakeOverForbidden
             property var start: null
             onActiveChanged: {
                 if (active) {
