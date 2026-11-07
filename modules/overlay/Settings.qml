@@ -375,19 +375,33 @@ Item {
                 MIcon { text: ghost.m ? ghost.m.i : ""; fill: true; size: 20; color: Theme.fgPrimaryContainer; anchors.verticalCenter: parent.verticalCenter }
                 Label { text: ghost.m ? ghost.m.n : ""; size: 12.5; w: 650; color: Theme.fgPrimaryContainer; anchors.verticalCenter: parent.verticalCenter } }
         }
-        MouseArea {
-            anchors.fill: parent
-            z: 9
+        // dragging and clicking by pointer handlers, not a MouseArea over
+        // it all: a MouseArea there took the wheel too, and the settings'
+        // page did not scroll over the constructor. Handlers leave the wheel
+        // to the page.
+        HoverHandler {
+            id: bhov
+            cursorShape: bb.dragKey !== "" ? Qt.ClosedHandCursor : hovered && bb.chipAt(point.position) ? Qt.OpenHandCursor : Qt.ArrowCursor
+        }
+        DragHandler {
+            id: bdrag
+            target: null
+            dragThreshold: 5
+            // (once dragging, the page's list may not take it over)
+            grabPermissions: PointerHandler.CanTakeOverFromAnything
             property var start: null
-            property point p0
-            hoverEnabled: true
-            cursorShape: bb.dragKey !== "" ? Qt.ClosedHandCursor : containsMouse && bb.chipAt(Qt.point(mouseX, mouseY)) ? Qt.OpenHandCursor : Qt.ArrowCursor
-            onPressed: e => { start = bb.chipAt(Qt.point(e.x, e.y)); p0 = Qt.point(e.x, e.y); if (!start) e.accepted = false; }
-            onPositionChanged: e => {
-                if (!start || !pressed) return;
-                const p = Qt.point(e.x, e.y);
-                if (bb.dragKey === "" && Math.hypot(p.x - p0.x, p.y - p0.y) < 5) return;
-                bb.dragKey = start.k;
+            onActiveChanged: {
+                if (active) {
+                    start = bb.chipAt(centroid.pressPosition);
+                    if (start) bb.dragKey = start.k;
+                } else {
+                    if (bb.dragKey !== "") { bb.dragKey = ""; bb.hoverZone = ""; bb.commit(); }
+                    start = null;
+                }
+            }
+            onCentroidChanged: {
+                if (!active || !start) return;
+                const p = centroid.position;
                 bb.dragAt = p;
                 const z = bb.zoneAt(p);
                 bb.hoverZone = z;
@@ -397,14 +411,16 @@ Item {
                     if (now < 0 || now !== (i < 0 ? rest.length : i)) bb.moveTo(start.k, z, i);
                 }
             }
-            onReleased: {
-                if (bb.dragKey !== "") { bb.dragKey = ""; bb.hoverZone = ""; bb.commit(); }
-                else if (start && start.z === "off") { bb.moveTo(start.k, "end", -1); bb.commit(); }
-                start = null;
+        }
+        TapHandler {
+            // a click in the pool: onto the bar, at its end
+            onTapped: ev => {
+                const c = bb.chipAt(ev.position);
+                if (c && c.z === "off") { bb.moveTo(c.k, "end", -1); bb.commit(); }
             }
-            onCanceled: { if (bb.dragKey !== "") { bb.dragKey = ""; bb.hoverZone = ""; bb.commit(); } start = null; }
-            onDoubleClicked: e => {
-                const c = bb.chipAt(Qt.point(e.x, e.y));
+            // a double click on the bar: off it
+            onDoubleTapped: ev => {
+                const c = bb.chipAt(ev.position);
                 if (c && c.z !== "off") { bb.moveTo(c.k, "off", -1); bb.commit(); }
             }
         }
