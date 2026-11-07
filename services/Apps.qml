@@ -46,7 +46,14 @@ Singleton {
         if (!a) return;
         const w = windows.find(x => { const e = entryOf(x); return e && e.id === a.id; });
         if (w && w.address) Hyprland.dispatch("focuswindow address:0x" + w.address);
-        else a.execute();
+        else if (a.command && a.command.length) {
+            // through Zerp (its exec), not as Quickshell's own child: what
+            // Zerp starts gets its environment -- our terminal its own
+            // protocol and the glass behind it (as Quickshell's child it
+            // was a plain Wayland window, opaque)
+            const q = x => /^[\w@%+=:,./-]+$/.test(x) ? x : "'" + x.replace(/'/g, "'\\''") + "'";
+            Hyprland.dispatch("exec " + a.command.map(q).join(" "));
+        } else a.execute();
     }
     function icon(a) { return a && a.icon ? Quickshell.iconPath(a.icon, true) : ""; }
     // a colour for an app that has no icon: its name's hue

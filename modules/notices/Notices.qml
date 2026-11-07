@@ -38,11 +38,11 @@ PanelWindow {
             NoteCard {
                 id: tc
                 required property var modelData
-                n: modelData
+                n: modelData.n
                 toast: true
                 width: toasts.width
                 opacity: 0
-                Component.onCompleted: { opacity = 1; lifeAnim.start(); }
+                Component.onCompleted: opacity = 1
                 scale: .9
                 Behavior on opacity { SmoothAnim { ms: 300 } }
                 Behavior on scale { SpringAnim { ms: 600 } }
@@ -59,9 +59,13 @@ PanelWindow {
                     height: 3; color: Theme.primary; opacity: .6
                     width: parent.width * tc.life
                 }
+                // what is left of its time (the service's deadline: it goes
+                // then, whatever the card or the pointer is doing)
                 property real life: 1
-                NumberAnimation on life { id: lifeAnim; running: false; from: 1; to: 0; duration: Config.data.notif.secs * 1000; paused: hov.hovered; onFinished: Notifs.dropToast(tc.modelData) }
+                Timer { interval: 100; repeat: true; running: true; triggeredOnStart: true
+                        onTriggered: tc.life = Math.max(0, Math.min(1, (tc.modelData.until - Date.now()) / Notifs.life)) }
                 HoverHandler { id: hov }
+                Timer { interval: 500; repeat: true; running: hov.hovered; onTriggered: Notifs.hold(tc.modelData.n) }
             }
         }
     }
