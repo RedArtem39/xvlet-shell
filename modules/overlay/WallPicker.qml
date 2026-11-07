@@ -181,6 +181,6 @@ Item {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom; anchors.bottomMargin: 200
         text: "← → или колёсико · Enter — поставить · Esc — закрыть · свои: ~/Pictures/Wallpapers"
-        size: 14; w: 600; color: Theme.oklch(96, .02, Theme.now.h, .8)
+        size: 14; w: 600; color: Theme.alpha(Theme.fgSurface, .8)
     }
 }

@@ -137,7 +137,7 @@ WlSessionLockSurface {
                     }
                     Row {
                         x: 18; y: 18; spacing: 16
-                        MShape { width: 72; height: 72; shape: Theme.shSunny; color: Weather.ok ? Theme.oklch(85, .14, 85) : Theme.surfaceHighest
+                        MShape { width: 72; height: 72; shape: Theme.shSunny; color: Weather.ok ? Theme.tertiary : Theme.surfaceHighest
                             MIcon { anchors.centerIn: parent; visible: !Weather.ok; text: "cloud_off"; size: 28 } }
                         Column {
                             anchors.verticalCenter: parent.verticalCenter

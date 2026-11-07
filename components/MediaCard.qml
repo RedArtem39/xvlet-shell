@@ -24,7 +24,15 @@ Item {
             anchors.fill: parent
             shape: Media.playing ? Theme.shCircle : Theme.shCookie12
             morphMs: 700
-            grad: [Theme.oklch(70, .15, cover.h + 60), Theme.oklch(55, .17, cover.h), Theme.oklch(40, .12, cover.h - 40)]
+            // nothing plays: a quiet tonal cookie that breathes
+            opacity: Media.present ? 1 : .35
+            Behavior on opacity { SmoothAnim { ms: 400 } }
+            SequentialAnimation on scale {
+                running: !Media.present && !Theme.still; loops: Animation.Infinite
+                NumberAnimation { from: .94; to: 1.02; duration: 2000; easing.type: Easing.InOutSine }
+                NumberAnimation { from: 1.02; to: .94; duration: 2000; easing.type: Easing.InOutSine }
+            }
+            grad: [Theme.tertiary, Theme.primary, Theme.primaryContainer]
         }
         // the cover art, cut to the shape
         Image {
@@ -37,15 +45,15 @@ Item {
             layer.enabled: visible
             layer.effect: MultiEffect { maskEnabled: true; maskSource: coverShape; maskThresholdMin: .5; maskSpreadAtMin: .2 }
         }
-        MIcon { anchors.centerIn: parent; visible: img.status !== Image.Ready; text: "music_note"; fill: true; size: root.art * .39; color: Qt.rgba(.98, .98, .98, .9) }
+        MIcon { anchors.centerIn: parent; visible: img.status !== Image.Ready; text: "music_note"; fill: true; size: root.art * .39; color: Theme.fgPrimary }
     }
     Column {
         id: col
         x: root.art + 18
         width: root.width - x
         anchors.verticalCenter: parent.verticalCenter
-        Label { text: Media.title; size: root.big ? 30 : root.small ? 18 : 22; w: 700; font.letterSpacing: -.3; width: parent.width }
-        Label { text: Media.artist || (Media.present ? "" : "Плееров нет"); size: 14; w: 550; dim: true; width: parent.width; topPadding: 2 }
+        Label { text: Media.present ? Media.title : "Тишина"; size: root.big ? 30 : root.small ? 18 : 22; w: 700; font.letterSpacing: -.3; width: parent.width; elide: Text.ElideRight }
+        Label { text: Media.present ? Media.artist : "Включите музыку — она появится здесь"; size: 14; w: 550; dim: true; width: parent.width; topPadding: 2; elide: Text.ElideRight }
         Item { width: 1; height: 10 }
         WavyProgress {
             width: parent.width; height: 28
@@ -63,6 +71,7 @@ Item {
         Row {
             spacing: 8
             topPadding: 8
+            visible: Media.present
             Ctl { icon: "skip_previous"; onClicked: Media.prev() }
             Rectangle {
                 readonly property real bw: root.small ? 60 : 76

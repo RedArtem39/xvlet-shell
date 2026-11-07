@@ -57,7 +57,7 @@ Item {
                     }
                     MIcon {
                         anchors.centerIn: parent; text: b.modelData.i; size: 52
-                        color: b.on ? (b.modelData.danger ? Theme.oklch(20, .05, 25) : Theme.fgPrimary) : Theme.fgSurface
+                        color: b.on ? (b.modelData.danger ? Theme.fgPrimary : Theme.fgPrimary) : Theme.fgSurface
                         Behavior on color { ColorAnim { ms: 250 } }
                     }
                     MouseArea {
@@ -67,7 +67,7 @@ Item {
                         onClicked: { Sfx.ui("press"); Ui.closeAll(); Power.act(b.modelData.k); }
                     }
                 }
-                Label { text: b.modelData.n; size: 16; w: 650; anchors.horizontalCenter: parent.horizontalCenter; color: Theme.oklch(97, .02, Theme.now.h) }
+                Label { text: b.modelData.n; size: 16; w: 650; anchors.horizontalCenter: parent.horizontalCenter; color: Theme.fgSurface }
             }
         }
     }
@@ -75,6 +75,6 @@ Item {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.bottom; anchors.bottomMargin: 70
         text: "← → выбрать · Enter · Esc — отмена"
-        size: 14; w: 600; color: Theme.oklch(95, .02, Theme.now.h, .7)
+        size: 14; w: 600; color: Theme.alpha(Theme.fgSurface, .7)
     }
 }

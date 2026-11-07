@@ -183,13 +183,19 @@ Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             width: root.has && root.hov ? ctl.width : root.has ? 26 : 24
             height: 32
-            Behavior on width { SpringAnim { ms: 400 } }
+            clip: true
+            Behavior on width { SpringAnim { ms: 450 } }
             // dancing (or a pause mark)
             Row {
-                anchors.centerIn: parent
+                anchors.right: parent.right; anchors.rightMargin: root.on ? 4 : 4
+                anchors.verticalCenter: parent.verticalCenter
                 spacing: 3
-                visible: root.has && !root.hov
-                opacity: visible ? 1 : 0
+                visible: root.has && opacity > .01
+                // (the pointer on it: they fade, the controls come in)
+                opacity: root.hov ? 0 : 1
+                scale: root.hov ? .6 : 1
+                Behavior on opacity { SmoothAnim { ms: 180 } }
+                Behavior on scale { SpringAnim { ms: 400 } }
                 Repeater {
                     model: root.on ? 4 : 0
                     Rectangle {
@@ -216,7 +222,13 @@ Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.right: parent.right
                 spacing: 0
-                visible: root.has && root.hov
+                visible: root.has && opacity > .01
+                opacity: root.hov ? 1 : 0
+                scale: root.hov ? 1 : .7
+                transformOrigin: Item.Right
+                transform: Translate { x: root.hov ? 0 : 14; Behavior on x { SpringAnim { ms: 450 } } }
+                Behavior on opacity { SmoothAnim { ms: 220 } }
+                Behavior on scale { SpringAnim { ms: 450 } }
                 IconButton { size: 30; iconSize: 18; icon: "skip_previous"; fill: true; onClicked: Media.prev() }
                 IconButton { size: 30; iconSize: 20; icon: root.on ? "pause" : "play_arrow"; fill: true; on: true; onClicked: Media.toggle() }
                 IconButton { size: 30; iconSize: 18; icon: "skip_next"; fill: true; onClicked: Media.next() }

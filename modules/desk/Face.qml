@@ -113,10 +113,10 @@ Item {
             anchors.verticalCenter: parent ? parent.verticalCenter : undefined
             spacing: -root.cq * 46 * .18
             layer.enabled: true
-            layer.effect: MultiEffect { shadowEnabled: true; shadowColor: Theme.oklch(10, .05, root.hue, .3); shadowBlur: 1; shadowVerticalOffset: 2 }
-            Label { text: Qt.formatTime(clock.date, "hh"); size: root.cq * 46; w: 800; font.letterSpacing: -root.cq * 46 * .04; color: Theme.oklch(97, root.chroma * .2, root.hue); font.features: { "tnum": 1 } }
+            layer.effect: MultiEffect { shadowEnabled: true; shadowColor: Theme.alpha(Theme.shadow, .3); shadowBlur: 1; shadowVerticalOffset: 2 }
+            Label { text: Qt.formatTime(clock.date, "hh"); size: root.cq * 46; w: 800; font.letterSpacing: -root.cq * 46 * .04; color: Theme.fgSurface; font.features: { "tnum": 1 } }
             Label { text: Qt.formatTime(clock.date, "mm"); size: root.cq * 46; w: 800; font.letterSpacing: -root.cq * 46 * .04; color: Theme.primary; font.features: { "tnum": 1 } }
-            Label { text: clock.date.toLocaleDateString(Qt.locale("ru_RU"), "dddd, d MMMM"); size: root.cq * 7; w: 650; color: Theme.oklch(95, .03, root.hue, .85); topPadding: root.cq * 5 + root.cq * 46 * .18 }
+            Label { text: clock.date.toLocaleDateString(Qt.locale("ru_RU"), "dddd, d MMMM"); size: root.cq * 7; w: 650; color: Theme.alpha(Theme.fgSurface, .85); topPadding: root.cq * 5 + root.cq * 46 * .18 }
         }
     }
     Component {
@@ -129,7 +129,7 @@ Item {
                 font.family: Theme.font
                 font.pixelSize: Math.max(8, root.height * 1.05)
                 font.variableAxes: ({ wght: 150, wdth: 25, opsz: 144 })
-                color: Theme.oklch(97, root.chroma * .2, root.hue, .92)
+                color: Theme.alpha(Theme.fgSurface, .92)
                 transformOrigin: Item.TopLeft
                 scale: 1
                 transform: Scale { xScale: st.implicitWidth > 0 ? root.width / st.implicitWidth : 1 }
@@ -139,7 +139,7 @@ Item {
     }
 
     // ---- weather ----
-    readonly property color sun: Theme.oklch(85, .14, 85)
+    readonly property color sun: Theme.tertiary
     Component {
         id: wFull
         // .wfull: the sun, the temperature, the place; four days under
@@ -253,8 +253,8 @@ Item {
                 // the grooves: rings of two tones
                 Canvas {
                     anchors.fill: parent
-                    property color a: Theme.oklch(14, .02, root.hue)
-                    property color b: Theme.oklch(18, .02, root.hue)
+                    property color a: Theme.surface
+                    property color b: Theme.surfaceLow
                     onAChanged: requestPaint()
                     onPaint: {
                         const g = getContext("2d"), r = width / 2, step = root.cq * 2.2, dark = root.cq * 1.2;
@@ -270,9 +270,9 @@ Item {
                     width: parent.width * .4; height: width; radius: width / 2
                     gradient: Gradient {
                         orientation: Gradient.Horizontal
-                        GradientStop { position: 0; color: Theme.oklch(72, .15, root.hue + 60) }
-                        GradientStop { position: .5; color: Theme.oklch(55, .17, root.hue) }
-                        GradientStop { position: 1; color: Theme.oklch(40, .12, root.hue - 40) }
+                        GradientStop { position: 0; color: Theme.tertiary }
+                        GradientStop { position: .5; color: Theme.primary }
+                        GradientStop { position: 1; color: Theme.primaryContainer }
                     }
                     rotation: 45
                 }
@@ -382,7 +382,7 @@ Item {
                 x: root.cq * 7; anchors.bottom: parent.bottom; anchors.bottomMargin: root.cq * 7
                 width: parent.width - root.cq * 14; spacing: 8
                 Repeater {
-                    model: [{ k: "logout", i: "logout", c: Theme.oklch(70, .12, 250) }, { k: "reboot", i: "restart_alt", c: Theme.oklch(72, .14, 60) }, { k: "off", i: "power_settings_new", c: Theme.oklch(66, .18, 25) }]
+                    model: [{ k: "logout", i: "logout", c: Theme.primary }, { k: "reboot", i: "restart_alt", c: Theme.tertiary }, { k: "off", i: "power_settings_new", c: Theme.error }]
                     Rectangle {
                         id: cap
                         required property var modelData
@@ -419,8 +419,8 @@ Item {
         Rectangle {
             radius: Theme.r
             readonly property real nh: root.hue + 80
-            color: Theme.dark ? Theme.oklch(40, .08, nh) : Theme.oklch(88, .09, nh)
-            readonly property color ink: Theme.dark ? Theme.oklch(95, .03, nh) : Theme.oklch(25, .05, nh)
+            color: Theme.tertiaryContainer
+            readonly property color ink: Theme.fgTertiaryContainer
             Row {
                 x: 20; y: 18; spacing: 6
                 MIcon { text: "push_pin"; fill: true; size: 18; color: parent.parent.ink }

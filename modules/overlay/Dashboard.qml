@@ -127,7 +127,7 @@ Popout {
                     x: 18; anchors.verticalCenter: parent.verticalCenter; spacing: 18
                     MShape {
                         width: 84; height: 84; shape: Theme.shSunny
-                        color: Weather.ok ? Theme.oklch(85, .14, 85) : Theme.alpha(Theme.fgPrimaryContainer, .15)
+                        color: Weather.ok ? Theme.tertiary : Theme.alpha(Theme.fgPrimaryContainer, .15)
                         anchors.verticalCenter: parent.verticalCenter
                         RotationAnimation on rotation { from: 0; to: 360; duration: 30000; loops: Animation.Infinite; running: root.shown && Weather.ok && !Theme.still }
                         MIcon { anchors.centerIn: parent; visible: !Weather.ok; text: "cloud_off"; size: 32; color: Theme.fgPrimaryContainer }

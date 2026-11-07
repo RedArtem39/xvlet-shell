@@ -17,7 +17,7 @@ Item {
         anchors.fill: parent
         radius: root.r
         visible: img.status !== Image.Ready
-        color: Theme.oklch(72, .13, Apps.hue(root.app))
+        color: Theme.secondaryContainer
         Behavior on radius { SpringAnim {} }
         MIcon {
             anchors.centerIn: parent
@@ -26,7 +26,7 @@ Item {
                 : (root.app.categories || []).includes("WebBrowser") ? "travel_explore" : "apps"
             fill: true
             size: root.size * .52
-            color: Theme.oklch(22, .06, Apps.hue(root.app))
+            color: Theme.fgSecondaryContainer
         }
     }
     Image {

@@ -37,17 +37,21 @@ Singleton {
             const a = Mcu.MCU.argbFromRgb(Math.round(c.r * 255), Math.round(c.g * 255), Math.round(c.b * 255));
             pop.set(a, (pop.get(a) || 0) + 1);
         }
+        // (no fallback colour: a wallpaper without colours of its own -- black
+        // and white -- gets a grey theme, not Material's purple out of nothing)
         let picks = [];
-        try { picks = pop.size ? Mcu.MCU.Score.score(pop, { desired: 4, fallbackColorARGB: 0xff6750a4, filter: true }) : []; } catch (e) { picks = []; }
+        try { picks = pop.size ? Mcu.MCU.Score.score(pop, { desired: 4, fallbackColorARGB: 0x00000000, filter: true }).filter(a => a !== 0) : []; } catch (e) { picks = []; }
         const out = picks.map(a => { const o = toOklch(((a >> 16) & 255) / 255, ((a >> 8) & 255) / 255, (a & 255) / 255); return { argb: a, h: Math.round(o[2]), c: Math.max(.03, Math.min(.2, o[1])) }; });
-        return out.length ? out : [{ argb: 0xff6750a4, h: 285, c: .02 }];
+        return out.length ? out : [{ argb: 0xff808080, h: 0, c: 0, mono: true }];
     }
 
     // what is in force: a saved theme, the wallpaper's seed, or a chosen hue
     readonly property var now: {
         if (th.src === "saved" && th.saved && th.saved[th.active]) return th.saved[th.active];
         const seed = th.src === "custom" ? { h: th.custom, c: .14 } : (wallSeeds[th.seed] || wallSeeds[0]);
-        return { h: seed.h, c: seed.c, argb: seed.argb, scheme: th.scheme, mode: th.mode };
+        // a colourless wallpaper: grey whatever the scheme (any other would
+        // make up a hue)
+        return { h: seed.h, c: seed.c, argb: seed.argb, scheme: seed.mono ? "mono" : th.scheme, mode: th.mode };
     }
     readonly property bool dark: now.mode !== "light"
 
