@@ -283,6 +283,8 @@ Item {
     ]
     function mods(on) { const all = ["logo", "ws", "tasks", "media", "tray", "sysmon", "weather", "status", "bell", "clock", "power"], o = {}; for (const k of all) o[k] = on[k] || "off"; return o; }
     property int presetOn: -1
+    function applyPreset(i) { Config.data = Config.merge(Config.data, presets[i].c); Config.set("theme.radius", Config.data.theme.radius); presetOn = i; }
+    Connections { target: Ui; function onPresetRequested(i) { root.applyPreset(i); } }
 
     // a strip along an edge of a preview: from s to e (fractions or px), th thick, g off the edge
     component Edge: Rectangle {
@@ -371,7 +373,7 @@ Item {
                                 }
                                 MouseArea {
                                     id: pm2; anchors.fill: parent; hoverEnabled: true
-                                    onClicked: { Config.data = Config.merge(Config.data, ps.modelData.c); Config.set("theme.radius", Config.data.theme.radius); root.presetOn = ps.index; }
+                                    onClicked: root.applyPreset(ps.index)
                                 }
                             }
                         }

@@ -21,6 +21,7 @@ Singleton {
     property bool locked: false
     property bool editing: false
     property string osd: ""          // "volume", "brightness"
+    signal presetRequested(int i)    // (ipc: preset N -- as a click on Settings' style N)
     property string edgePeek: ""     // an edge panel brought out without the pointer (ipc: edge sliders|system)
     property bool dockLift: false    // the pointer at the dock's edge over windows (DockEdge.qml): the dock comes up
     property bool edgeOpen: false    // the right edge's sliders are out (modules/notices/EdgeSliders.qml): no OSD over them

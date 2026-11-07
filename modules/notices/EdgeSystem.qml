@@ -44,9 +44,10 @@ PanelWindow {
         // (the middle half of the edge)
         y: parent.height / 4
         width: 6; height: parent.height / 2
-        HoverHandler { onHoveredChanged: if (hovered && root.allowed) { root.open = true; closeLater.stop(); } }
+        HoverHandler { onHoveredChanged: if (hovered && root.allowed) { root.open = true; closeLater.stop(); idle.restart(); } }
     }
-    Timer { id: closeLater; interval: 700; onTriggered: root.open = false }
+    Timer { id: closeLater; interval: 600; onTriggered: root.open = false }
+    Timer { id: idle; interval: 2500; onTriggered: root.open = false }
 
     Rectangle {
         id: card
@@ -61,7 +62,20 @@ PanelWindow {
         visible: opacity > 0.01
         Behavior on opacity { SmoothAnim { ms: 220 } }
         transform: Translate { x: root.open ? 0 : card.width * root.dir; Behavior on x { SmoothAnim { ms: 380 } } }
-        HoverHandler { onHoveredChanged: if (hovered) closeLater.stop(); else closeLater.restart() }
+        // the concave corners where it meets the screen's edge (as the
+        // bar's segments)
+        Fillet { size: Theme.r; color: parent.color; x: root.side === "right" ? parent.width - size : 0; y: -size; hole: root.side === "right" ? "tl" : "tr" }
+        Fillet { size: Theme.r; color: parent.color; x: root.side === "right" ? parent.width - size : 0; y: parent.height; hole: root.side === "right" ? "bl" : "br" }
+        // out of the way again: the pointer gone from it (or, if the
+        // compositor never says it left, still for a while)
+        MouseArea {
+            anchors.fill: parent
+            acceptedButtons: Qt.NoButton
+            hoverEnabled: true
+            onPositionChanged: idle.restart()
+            onEntered: { closeLater.stop(); idle.restart(); }
+            onExited: closeLater.restart()
+        }
 
         Column {
             anchors.fill: parent

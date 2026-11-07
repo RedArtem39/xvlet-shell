@@ -48,9 +48,10 @@ PanelWindow {
         // (the middle half of the edge)
         y: parent.height / 4
         width: 6; height: parent.height / 2
-        HoverHandler { onHoveredChanged: if (hovered && root.allowed) { root.open = true; closeLater.stop(); } }
+        HoverHandler { onHoveredChanged: if (hovered && root.allowed) { root.open = true; closeLater.stop(); idle.restart(); } }
     }
-    Timer { id: closeLater; interval: 700; onTriggered: root.open = false }
+    Timer { id: closeLater; interval: 600; onTriggered: root.open = false }
+    Timer { id: idle; interval: 2500; onTriggered: root.open = false }
 
     // the sheet they sit on: against the screen's edge, rounded inside only,
     // coming out from behind the edge
@@ -65,7 +66,20 @@ PanelWindow {
         opacity: body.opacity
         visible: body.visible
         transform: Translate { x: root.open ? 0 : sheet.width * root.dir; Behavior on x { SmoothAnim { ms: 380 } } }
-        HoverHandler { onHoveredChanged: if (hovered) closeLater.stop(); else closeLater.restart() }
+        // the concave corners where it meets the screen's edge (as the
+        // bar's segments)
+        Fillet { size: Theme.r; color: parent.color; x: root.side === "right" ? parent.width - size : 0; y: -size; hole: root.side === "right" ? "tl" : "tr" }
+        Fillet { size: Theme.r; color: parent.color; x: root.side === "right" ? parent.width - size : 0; y: parent.height; hole: root.side === "right" ? "bl" : "br" }
+        // out of the way again: the pointer gone from it (or, if the
+        // compositor never says it left, still for a while)
+        MouseArea {
+            anchors.fill: parent
+            acceptedButtons: Qt.NoButton
+            hoverEnabled: true
+            onPositionChanged: idle.restart()
+            onEntered: { closeLater.stop(); idle.restart(); }
+            onExited: closeLater.restart()
+        }
     }
     Row {
         id: body
@@ -114,9 +128,9 @@ PanelWindow {
                 }
                 MouseArea {
                     anchors.fill: parent
-                    onPressed: e => pill.put(e.y)
-                    onPositionChanged: e => { if (pressed) pill.put(e.y); }
-                    onWheel: w => { if (pill.vol) Audio.step(w.angleDelta.y > 0 ? .05 : -.05); else Brightness.step(w.angleDelta.y > 0 ? .05 : -.05); }
+                    onPressed: e => { idle.restart(); pill.put(e.y); }
+                    onPositionChanged: e => { idle.restart(); if (pressed) pill.put(e.y); }
+                    onWheel: w => { idle.restart(); if (pill.vol) Audio.step(w.angleDelta.y > 0 ? .05 : -.05); else Brightness.step(w.angleDelta.y > 0 ? .05 : -.05); }
                     onDoubleClicked: if (pill.vol) Audio.toggleMute()
                 }
             }

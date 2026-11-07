@@ -124,6 +124,7 @@ ShellRoot {
         function edit(): void { Ui.editing = !Ui.editing; }
         // the screen edges' panels out, as the pointer would bring them ("sliders", "system", "" none)
         function edge(which: string): void { Ui.edgePeek = which; }
+        function preset(i: int): void { Ui.presetRequested(i); }
         function close(): void { Ui.closeAll(); Ui.settings = false; }
         function set(path: string, value: string): void { let v = value; try { v = JSON.parse(value); } catch (e) {} Config.set(path, v); }
         function notify(summary: string, body: string): void { Notifs.test(summary, body); }
