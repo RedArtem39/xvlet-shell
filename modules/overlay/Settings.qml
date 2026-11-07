@@ -403,13 +403,6 @@ Item {
                 start = null;
             }
             onCanceled: { if (bb.dragKey !== "") { bb.dragKey = ""; bb.hoverZone = ""; bb.commit(); } start = null; }
-            // the wheel: the page scrolls (this area over the constructor
-            // kept it from the page's list)
-            onWheel: w => {
-                const f = root.pageFlick;
-                if (!f) { w.accepted = false; return; }
-                f.contentY = Math.max(0, Math.min(Math.max(0, f.contentHeight - f.height), f.contentY - w.angleDelta.y));
-            }
             onDoubleClicked: e => {
                 const c = bb.chipAt(Qt.point(e.x, e.y));
                 if (c && c.z !== "off") { bb.moveTo(c.k, "off", -1); bb.commit(); }
@@ -776,8 +769,6 @@ Item {
     }
 
     // ---- Панель ----
-    // the page's list, for what takes the wheel over it (the bar's constructor)
-    readonly property var pageFlick: fl
     readonly property var modNames: [
         { k: "logo", n: "Меню приложений", d: "Кнопка лаунчера", i: "auto_awesome" },
         { k: "ws", n: "Рабочие столы", d: "Переключение столов, колёсико листает", i: "workspaces" },
