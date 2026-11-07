@@ -181,25 +181,232 @@ Item {
         property string title
         property string kw: ""
         width: parent ? parent.width : 0
-        height: Math.max(64, ctl.childrenRect.height + 20)
+        // controls too wide beside the name: under it, to the right (they
+        // went over the name)
+        readonly property bool below: ctl.width > width - 70 - 30 - 170
+        height: below ? 64 + ctl.height + 10 : Math.max(64, ctl.childrenRect.height + 20)
         visible: root.query === "" || (title + " " + kw).toLowerCase().includes(root.query)
         Rectangle { anchors.fill: parent; radius: 18; color: Theme.alpha(Theme.fgSurface, hov.hovered ? .04 : 0); Behavior on color { ColorAnim { ms: 200 } } }
         HoverHandler { id: hov }
         Rectangle {
-            x: 14; anchors.verticalCenter: parent.verticalCenter
+            id: ico
+            x: 14; y: r.below ? 12 : (r.height - height) / 2
             width: 40; height: 40; radius: 14
             color: Theme.surfaceHigh
             MIcon { anchors.centerIn: parent; text: r.icon; size: 22; color: Theme.fgSurfaceVar }
         }
         Label {
-            x: 70; anchors.verticalCenter: parent.verticalCenter
-            width: parent.width - 70 - ctl.width - 30
+            x: 70; anchors.verticalCenter: ico.verticalCenter
+            width: r.below ? parent.width - 70 - 14 : parent.width - 70 - ctl.width - 30
             text: r.title; size: 15; w: 650
         }
         Item {
             id: ctl
-            anchors.right: parent.right; anchors.rightMargin: 14; anchors.verticalCenter: parent.verticalCenter
+            anchors.right: parent.right; anchors.rightMargin: 14
+            y: r.below ? 64 : (r.height - height) / 2
             width: childrenRect.width; height: childrenRect.height
+        }
+    }
+    // ---- the bar's constructor (the prototype's barBuilderHtml): the bar
+    // drawn small, its three parts and what is not on it; icons dragged
+    // between them and along them, the order kept (bar.order), the real
+    // bar following at once. One MouseArea over all of it does the
+    // dragging: the parts' Repeaters are made again as the icons move, and
+    // a press inside one of their icons would die with it.
+    component BarChip: Rectangle {
+        id: ch
+        required property var host
+        required property string key
+        property bool named: false
+        readonly property var m: host.info(key)
+        width: named ? chr.implicitWidth + 22 : 40; height: 40; radius: 20
+        color: chm.hovered && host.dragKey === "" ? Theme.secondaryContainer : Theme.surfaceHigh
+        opacity: host.dragKey === key ? .35 : 1
+        scale: host.dragKey === key ? .92 : 1
+        Behavior on scale { SpringAnim { ms: 300 } }
+        HoverHandler { id: chm }
+        Row {
+            id: chr; anchors.centerIn: parent; spacing: 8
+            MIcon { text: ch.m ? ch.m.i : ""; fill: true; size: 20; anchors.verticalCenter: parent.verticalCenter
+                    color: chm.hovered && host.dragKey === "" ? Theme.fgSecondaryContainer : Theme.fgSurface }
+            Label { visible: ch.named; text: ch.m ? ch.m.n : ""; size: 12.5; w: 650; anchors.verticalCenter: parent.verticalCenter }
+        }
+    }
+    component BarPart: Rectangle {
+        id: part
+        required property var host
+        required property string zone
+        property bool named: false
+        readonly property alias flow: pflow
+        readonly property bool over: host.dragKey !== "" && host.hoverZone === zone
+        radius: 22
+        color: over ? Theme.alpha(Theme.primary, .14) : Theme.alpha(Theme.fgSurface, .03)
+        border.width: over ? 2 : 0; border.color: Theme.primary
+        Component.onCompleted: { const p = Object.assign({}, host.parts); p[zone] = part; host.parts = p; }
+        Label { x: host.vert && part.zone !== "off" ? 0 : 12; width: host.vert && part.zone !== "off" ? parent.width : implicitWidth
+                horizontalAlignment: Text.AlignHCenter
+                y: 5; text: host.names[part.zone] || ""; size: 10.5; w: 700; dim: true; font.capitalization: Font.AllUppercase }
+        Flow {
+            id: pflow
+            x: 8; y: part.zone === "off" ? 8 : 22
+            width: parent.width - 16
+            spacing: 6
+            layoutDirection: !host.vert && part.zone === "end" ? Qt.RightToLeft : Qt.LeftToRight
+            Repeater { model: part.host.zones[part.zone]; BarChip { required property string modelData; key: modelData; named: part.named; host: part.host } }
+        }
+    }
+
+    component BarBuilder: Item {
+        id: bb
+        property string kw: "модули панели значки порядок перетащить"
+        width: parent ? parent.width : 0
+        height: bcol.implicitHeight + 8
+        visible: root.query === "" || kw.includes(root.query)
+        readonly property bool vert: root.cfg.bar.pos === "left" || root.cfg.bar.pos === "right"
+        readonly property var base: root.modNames.map(m => m.k)
+        readonly property var names: ({ start: vert ? "Верх" : "Начало", center: "Центр", end: vert ? "Низ" : "Конец" })
+        property var zones: ({ start: [], center: [], end: [], off: [] })
+        property string dragKey: ""
+        property string hoverZone: ""
+        property point dragAt: Qt.point(0, 0)
+        property var parts: ({})
+        function info(k) { return root.modNames.find(m => m.k === k); }
+        function fromCfg() {
+            const o0 = (root.cfg.bar.order || []).filter(k => base.includes(k)), o = o0.concat(base.filter(k => !o0.includes(k)));
+            const m = root.cfg.bar.mods, z = { start: [], center: [], end: [], off: [] };
+            o.forEach(k => { const w = m[k] || "off"; (z[w] || z.off).push(k); });
+            zones = z;
+        }
+        function commit() {
+            const order = [], mods = {};
+            ["start", "center", "end", "off"].forEach(z => zones[z].forEach(k => { order.push(k); mods[k] = z; }));
+            Config.set("bar", Object.assign({}, root.cfg.bar, { order: order, mods: Object.assign({}, root.cfg.bar.mods, mods) }));
+        }
+        function moveTo(k, z, i) {
+            const n = { start: zones.start.filter(x => x !== k), center: zones.center.filter(x => x !== k), end: zones.end.filter(x => x !== k), off: zones.off.filter(x => x !== k) };
+            n[z].splice(i < 0 ? n[z].length : Math.min(i, n[z].length), 0, k);
+            zones = n;
+        }
+        Component.onCompleted: fromCfg()
+        Connections { target: Config; function onDataChanged() { if (bb.dragKey === "") bb.fromCfg(); } }
+
+        // which part, which icon, where among a part's icons a point is
+        function zoneAt(p) {
+            for (const z of ["start", "center", "end", "off"]) {
+                const box = parts[z];
+                if (!box) continue;
+                const q = box.mapFromItem(bb, p.x, p.y);
+                if (q.x >= 0 && q.y >= 0 && q.x <= box.width && q.y <= box.height) return z;
+            }
+            return "";
+        }
+        function chipsOf(z) {
+            const box = parts[z], out = [];
+            if (!box) return out;
+            const f = box.flow;
+            for (let i = 0; i < f.children.length; i++) if (f.children[i].key !== undefined) out.push(f.children[i]);
+            return out;
+        }
+        function chipAt(p) {
+            for (const z of ["start", "center", "end", "off"])
+                for (const c of chipsOf(z)) {
+                    const q = c.mapFromItem(bb, p.x, p.y);
+                    if (q.x >= 0 && q.y >= 0 && q.x <= c.width && q.y <= c.height) return { k: c.key, z: z };
+                }
+            return null;
+        }
+        function indexAt(z, p) {
+            let i = 0;
+            const rtl = !vert && z === "end";
+            for (const c of chipsOf(z).sort((a, b) => zones[z].indexOf(a.key) - zones[z].indexOf(b.key))) {
+                if (c.key === dragKey) continue;
+                const q = c.mapFromItem(bb, p.x, p.y);
+                if (vert ? q.y < c.height / 2 : (q.y < 0 || (q.y <= c.height && (rtl ? q.x > c.width / 2 : q.x < c.width / 2)))) return i;
+                i++;
+            }
+            return -1;
+        }
+
+        Column {
+            id: bcol
+            x: 6; y: 4; width: parent.width - 12
+            spacing: 12
+            // the bar, small
+            Rectangle {
+                width: bb.vert ? 104 : parent.width
+                height: pgrid.implicitHeight + 16
+                radius: 28
+                color: Theme.surface
+                border.width: 1; border.color: Theme.alpha(Theme.fgSurface, .08)
+                Grid {
+                    id: pgrid
+                    x: 8; y: 8
+                    columns: bb.vert ? 1 : 3; spacing: 8
+                    BarPart { host: bb; zone: "start"; width: bb.vert ? 88 : (bcol.width - 32) / 3; height: Math.max(bb.vert ? 150 : 60, flow.childrenRect.height + 30) }
+                    BarPart { host: bb; zone: "center"; width: bb.vert ? 88 : (bcol.width - 32) / 3; height: Math.max(bb.vert ? 150 : 60, flow.childrenRect.height + 30) }
+                    BarPart { host: bb; zone: "end"; width: bb.vert ? 88 : (bcol.width - 32) / 3; height: Math.max(bb.vert ? 150 : 60, flow.childrenRect.height + 30) }
+                }
+            }
+            Label { text: "Не на панели"; size: 12; w: 700; dim: true; leftPadding: 4 }
+            BarPart {
+                host: bb
+                zone: "off"; named: true
+                width: parent.width; height: Math.max(56, flow.childrenRect.height + 16)
+                color: over ? Theme.alpha(Theme.primary, .14) : "transparent"
+                border.width: 2; border.color: over ? Theme.primary : Theme.alpha(Theme.fgSurface, .14)
+            }
+            Row {
+                spacing: 8
+                MIcon { text: "drag_indicator"; size: 18; color: Theme.fgSurfaceVar; anchors.verticalCenter: parent.verticalCenter }
+                Label { width: bcol.width - 30; wrapMode: Text.WordWrap; size: 12; dim: true
+                        text: "Перетаскивайте значки между частями панели, вдоль них и в запас. Клик по значку в запасе — в конец панели, двойной по значку на панели — убрать." }
+            }
+        }
+
+        // what is dragged, under the pointer
+        Rectangle {
+            id: ghost
+            visible: bb.dragKey !== ""
+            readonly property var m: bb.info(bb.dragKey)
+            x: bb.dragAt.x - width / 2; y: bb.dragAt.y - height / 2; z: 10
+            width: gr.implicitWidth + 22; height: 40; radius: 20
+            color: Theme.primaryContainer
+            Row { id: gr; anchors.centerIn: parent; spacing: 8
+                MIcon { text: ghost.m ? ghost.m.i : ""; fill: true; size: 20; color: Theme.fgPrimaryContainer; anchors.verticalCenter: parent.verticalCenter }
+                Label { text: ghost.m ? ghost.m.n : ""; size: 12.5; w: 650; color: Theme.fgPrimaryContainer; anchors.verticalCenter: parent.verticalCenter } }
+        }
+        MouseArea {
+            anchors.fill: parent
+            z: 9
+            property var start: null
+            property point p0
+            hoverEnabled: true
+            cursorShape: bb.dragKey !== "" ? Qt.ClosedHandCursor : containsMouse && bb.chipAt(Qt.point(mouseX, mouseY)) ? Qt.OpenHandCursor : Qt.ArrowCursor
+            onPressed: e => { start = bb.chipAt(Qt.point(e.x, e.y)); p0 = Qt.point(e.x, e.y); if (!start) e.accepted = false; }
+            onPositionChanged: e => {
+                if (!start || !pressed) return;
+                const p = Qt.point(e.x, e.y);
+                if (bb.dragKey === "" && Math.hypot(p.x - p0.x, p.y - p0.y) < 5) return;
+                bb.dragKey = start.k;
+                bb.dragAt = p;
+                const z = bb.zoneAt(p);
+                bb.hoverZone = z;
+                if (z !== "") {
+                    const i = bb.indexAt(z, p), rest = bb.zones[z].filter(k => k !== start.k);
+                    const now = bb.zones[z].indexOf(start.k);
+                    if (now < 0 || now !== (i < 0 ? rest.length : i)) bb.moveTo(start.k, z, i);
+                }
+            }
+            onReleased: {
+                if (bb.dragKey !== "") { bb.dragKey = ""; bb.hoverZone = ""; bb.commit(); }
+                else if (start && start.z === "off") { bb.moveTo(start.k, "end", -1); bb.commit(); }
+                start = null;
+            }
+            onCanceled: { if (bb.dragKey !== "") { bb.dragKey = ""; bb.hoverZone = ""; bb.commit(); } start = null; }
+            onDoubleClicked: e => {
+                const c = bb.chipAt(Qt.point(e.x, e.y));
+                if (c && c.z !== "off") { bb.moveTo(c.k, "off", -1); bb.commit(); }
+            }
         }
     }
     component Mini: Rectangle {
@@ -588,20 +795,12 @@ Item {
                     Pick { path: "bar.style"; model: [{ k: "islands", n: "Острова" }, { k: "solid", n: "Сплошная" }, { k: "flush", n: "Прилегающая" }, { k: "seg", n: "Сегменты" }] } }
                 SRow { icon: "height"; title: "Толщина"
                     Range { path: "bar.height"; lo: 36; hi: 64; step: 2; unit: " px" } }
+                SRow { icon: "select_window"; title: "Панели прилегают к бару"; kw: "Часы, статус, меню прижаты к панели и выкатываются из-под неё, а не выпрыгивают"
+                    Sw { path: "bar.attach" } }
             }
             Group {
                 title: "Модули"
-                Repeater {
-                    model: root.modNames
-                    SRow { id: mr; required property var modelData; icon: modelData.i; title: modelData.n; kw: modelData.d + " модуль"
-                        readonly property string zone: root.cfg.bar.mods[modelData.k] || "off"
-                        Row { spacing: 14
-                            Seg { anchors.verticalCenter: parent.verticalCenter
-                                  model: root.cfg.bar.pos === "left" || root.cfg.bar.pos === "right" ? [{ k: "start", n: "Верх" }, { k: "center", n: "Центр" }, { k: "end", n: "Низ" }] : [{ k: "start", n: "Начало" }, { k: "center", n: "Центр" }, { k: "end", n: "Конец" }]
-                                  value: mr.zone; onPicked: k => Config.set("bar.mods." + mr.modelData.k, k) }
-                            Toggle { anchors.verticalCenter: parent.verticalCenter; checked: mr.zone !== "off"
-                                     onToggled: v => Config.set("bar.mods." + mr.modelData.k, v ? "end" : "off") } } }
-                }
+                BarBuilder {}
             }
             Group {
                 title: "Вид модулей"
@@ -683,9 +882,9 @@ Item {
         Column {
             spacing: 12
             Group {
-                SRow { icon: "vertical_align_bottom"; title: "Где открывается"; kw: "Снизу — выезжает из края экрана"
+                SRow { icon: "vertical_align_bottom"; title: "Где открывается"; kw: "С края — выкатывается из-за края экрана (или из-под панели, если она там)"
                     Row { spacing: 10
-                        Pick { anchors.verticalCenter: parent.verticalCenter; path: "launcher.pos"; model: [{ k: "bottom", n: "Снизу" }, { k: "center", n: "По центру" }, { k: "bar", n: "Из панели" }] }
+                        Pick { anchors.verticalCenter: parent.verticalCenter; path: "launcher.pos"; model: [{ k: "bottom", n: "Снизу" }, { k: "top", n: "Сверху" }, { k: "left", n: "Слева" }, { k: "right", n: "Справа" }, { k: "center", n: "По центру" }, { k: "bar", n: "Из панели" }] }
                         Mini { anchors.verticalCenter: parent.verticalCenter; icon: "open_in_new"; text: "Открыть"; onClicked: { Ui.settings = false; Ui.openLauncher(); } } } }
                 SRow { icon: "grid_view"; title: "Вид"; kw: "Сетка значков или список"
                     Pick { path: "launcher.view"; model: [{ k: "grid", n: "Сетка", i: "grid_view" }, { k: "list", n: "Список", i: "list" }] } }

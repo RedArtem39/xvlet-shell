@@ -1,43 +1,40 @@
 import QtQuick
-import QtQuick.Effects
 import qs.components
 import qs.services
 
-// A popout's body: the surface, the large radius; it grows out of the bar's
-// side with the spring and fades, and takes its own clicks (a click inside
-// does not close it)
+// A popout's body (components/EdgeSheet.qml), two ways:
+//   free      the surface, the large radius; it grows out of the bar's side
+//             with the spring and fades
+//   attached  (bar.attach) against the bar's inner side, concave corners
+//             where it meets it, rolled out from under it
+// It takes its own clicks (a click inside does not close it).
 Item {
     id: root
     property bool shown: false
     property string origin: "top"
     property real pad: 18
-    default property alias content: holder.data
+    property bool attached: Config.data.bar.attach === true
+    default property alias content: body.content
 
-    visible: opacity > 0.01
-    opacity: shown ? 1 : 0
-    scale: shown ? 1 : .94
+    visible: attached ? body.out : opacity > 0.01
+    opacity: attached || shown ? 1 : 0
+    scale: attached || shown ? 1 : .94
     transformOrigin: origin === "top" ? Item.Top : origin === "bottom" ? Item.Bottom : origin === "left" ? Item.Left : Item.Right
-    Behavior on opacity { SmoothAnim { ms: 220 } }
-    Behavior on scale { SpringAnim { ms: 500 } }
+    Behavior on opacity { enabled: !root.attached; SmoothAnim { ms: 220 } }
+    Behavior on scale { enabled: !root.attached; SpringAnim { ms: 500 } }
 
     transform: Translate {
-        x: root.shown ? 0 : root.origin === "left" ? -14 : root.origin === "right" ? 14 : 0
-        y: root.shown ? 0 : root.origin === "top" ? -14 : root.origin === "bottom" ? 14 : 0
-        Behavior on x { SpringAnim { ms: 500 } }
-        Behavior on y { SpringAnim { ms: 500 } }
+        x: root.shown || root.attached ? 0 : root.origin === "left" ? -14 : root.origin === "right" ? 14 : 0
+        y: root.shown || root.attached ? 0 : root.origin === "top" ? -14 : root.origin === "bottom" ? 14 : 0
+        Behavior on x { enabled: !root.attached; SpringAnim { ms: 500 } }
+        Behavior on y { enabled: !root.attached; SpringAnim { ms: 500 } }
     }
-    RectangularShadow { anchors.fill: parent; radius: Theme.r; blur: 80; spread: -24; offset.y: 24; color: Theme.shadow }
-    Rectangle {
+    EdgeSheet {
+        id: body
         anchors.fill: parent
-        radius: Theme.r
-        color: Theme.surfaceLow
-        border.width: 1; border.color: Theme.alpha(Theme.fgSurface, .06)
-        Behavior on color { ColorAnim { ms: 900 } }
-    }
-    MouseArea { anchors.fill: parent; onWheel: w => w.accepted = true }
-    Item {
-        id: holder
-        anchors.fill: parent
-        anchors.margins: root.pad
+        side: root.origin
+        attached: root.attached
+        shown: root.shown
+        pad: root.pad
     }
 }

@@ -21,7 +21,10 @@ PanelWindow {
     // (islands and the solid strip float: the gap from the edge)
     readonly property bool islands: bcfg.style === "islands" || bcfg.style === "solid"
     readonly property real thick: islands ? bh + 10 : bh
-    readonly property var order: ["logo", "ws", "tasks", "media", "tray", "sysmon", "weather", "status", "bell", "clock", "power"]
+    readonly property var base: ["logo", "ws", "tasks", "media", "tray", "sysmon", "weather", "status", "bell", "clock", "power"]
+    // the order the user put them in (the settings' constructor: bar.order),
+    // the rest after them in their own
+    readonly property var order: { const o = (bcfg.order || []).filter(k => base.includes(k)); return o.concat(base.filter(k => !o.includes(k))); }
     function keys(z) { return order.filter(k => bcfg.mods[k] === z); }
 
     WlrLayershell.namespace: "xvlet-bar"

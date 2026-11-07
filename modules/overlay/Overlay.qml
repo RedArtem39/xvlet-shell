@@ -66,9 +66,10 @@ PanelWindow {
         }
     }
 
-    // a popout comes out of the bar at its button
+    // a popout comes out of the bar at its button -- attached (bar.attach):
+    // against the bar's inner side, room left for its concave corners
     function popPos(a, w, h) {
-        const m = 8, gap = barThick + 8;
+        const att = bcfg.attach === true, m = att ? Theme.r + 4 : 8, gap = att ? barThick : barThick + 8;
         if (!bvert) return Qt.point(Math.max(m, Math.min(width - w - m, a - w / 2)), bpos === "top" ? gap : height - gap - h);
         return Qt.point(bpos === "left" ? gap : width - gap - w, Math.max(m, Math.min(height - h - m, a - h / 2)));
     }

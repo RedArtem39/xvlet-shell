@@ -21,7 +21,10 @@ PanelWindow {
     WlrLayershell.exclusionMode: ExclusionMode.Ignore
     anchors { top: true; bottom: true; left: true; right: true }
     color: "transparent"
-    mask: Region { item: toasts; Region { item: osd } }
+    // only the toasts take the pointer: the OSD is to look at, and in the
+    // mask (even hidden) it sat over the right edge's sliders -- an Overlay
+    // over their Top, every click and wheel on them went to it
+    mask: Region { item: toasts }
 
     Column {
         id: toasts

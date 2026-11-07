@@ -389,9 +389,10 @@ Item {
                         width: (parent.width - 16) / 3; height: 46
                         radius: capm.containsMouse ? 14 : 23
                         color: Theme.surfaceHigh
-                        clip: true
                         Behavior on radius { SpringAnim { ms: 350 } }
-                        Rectangle { height: parent.height; width: parent.width * capm.hold; color: cap.modelData.c }
+                        // the fill rounded as the cap itself (a clip cuts square:
+                        // the corners went sharp while held)
+                        Rectangle { height: parent.height; width: parent.width * capm.hold; radius: cap.radius; visible: capm.hold > 0; color: cap.modelData.c }
                         MIcon { anchors.centerIn: parent; text: cap.modelData.i; size: 22; color: capm.hold > .99 ? "#111" : cap.modelData.c }
                         MouseArea {
                             id: capm

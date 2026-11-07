@@ -25,6 +25,10 @@ PanelWindow {
     // (an empty desktop, nothing else open)
     readonly property bool allowed: Ui.deskLive && !Ui.editing && !Ui.anyOpen && !Ui.locked
     property bool open: false
+    // a pill held (dragged): never closed under the hand
+    property int held: 0
+    // the pointer seen on them: the closing put off
+    function touch() { closeLater.stop(); idle.restart(); }
     readonly property var pills: Brightness.present ? ["volume", "brightness"] : ["volume"]
 
     visible: allowed || open
@@ -36,7 +40,11 @@ PanelWindow {
     color: "transparent"
     implicitWidth: body.width + 28
     // only the edge's strip takes the pointer until the pills are out
-    mask: Region { item: root.open ? sheet : trigger }
+    // open: the whole window (it is only the sheet's column) -- a region
+    // following the sheet itself never reached Zerp's input as changed, and
+    // every click and wheel on the pills went through to the desktop
+    mask: Region { item: root.open ? whole : trigger }
+    Item { id: whole; anchors.fill: parent }
 
     onAllowedChanged: if (!allowed) open = false
     Connections { target: Ui; function onEdgePeekChanged() { root.open = Ui.edgePeek === "sliders" && root.allowed; } }
@@ -50,8 +58,11 @@ PanelWindow {
         width: 6; height: parent.height / 2
         HoverHandler { onHoveredChanged: if (hovered && root.allowed) { root.open = true; closeLater.stop(); idle.restart(); } }
     }
-    Timer { id: closeLater; interval: 600; onTriggered: root.open = false }
-    Timer { id: idle; interval: 2500; onTriggered: root.open = false }
+    // (a click or the wheel can make the compositor say the pointer left:
+    // any motion over them after that cancels it, and nothing closes
+    // while a pill is held)
+    Timer { id: closeLater; interval: 1500; onTriggered: if (root.held) restart(); else root.open = false }
+    Timer { id: idle; interval: 5000; onTriggered: if (root.held) restart(); else root.open = false }
 
     // the sheet they sit on: against the screen's edge, rounded inside only,
     // coming out from behind the edge
@@ -76,8 +87,8 @@ PanelWindow {
             anchors.fill: parent
             acceptedButtons: Qt.NoButton
             hoverEnabled: true
-            onPositionChanged: idle.restart()
-            onEntered: { closeLater.stop(); idle.restart(); }
+            onPositionChanged: root.touch()
+            onEntered: root.touch()
             onExited: closeLater.restart()
         }
     }
@@ -128,9 +139,13 @@ PanelWindow {
                 }
                 MouseArea {
                     anchors.fill: parent
-                    onPressed: e => { idle.restart(); pill.put(e.y); }
-                    onPositionChanged: e => { idle.restart(); if (pressed) pill.put(e.y); }
-                    onWheel: w => { idle.restart(); if (pill.vol) Audio.step(w.angleDelta.y > 0 ? .05 : -.05); else Brightness.step(w.angleDelta.y > 0 ? .05 : -.05); }
+                    hoverEnabled: true
+                    onEntered: root.touch()
+                    onPressed: e => { root.held++; root.touch(); pill.put(e.y); }
+                    onReleased: { root.held = Math.max(0, root.held - 1); root.touch(); }
+                    onCanceled: { root.held = Math.max(0, root.held - 1); root.touch(); }
+                    onPositionChanged: e => { root.touch(); if (pressed) pill.put(e.y); }
+                    onWheel: w => { root.touch(); if (pill.vol) Audio.step(w.angleDelta.y > 0 ? .05 : -.05); else Brightness.step(w.angleDelta.y > 0 ? .05 : -.05); }
                     onDoubleClicked: if (pill.vol) Audio.toggleMute()
                 }
             }
