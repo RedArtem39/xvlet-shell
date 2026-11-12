@@ -8,10 +8,18 @@ import qs.services
 Popout {
     id: root
     width: 440
-    height: Math.min(820, col.implicitHeight + 36)
+    height: Math.min(820, (wifiOpen ? Math.max(wpage.implicitHeight, 520) : col.implicitHeight) + 36)
+    Behavior on height { SpringAnim { ms: 500 } }
+
+    // the Wi-Fi page (WifiPage.qml) slides in over the rest
+    property bool wifiOpen: false
+    Binding { target: Wifi; property: "watching"; value: root.shown && root.wifiOpen }
 
     // the parts come in one after another as it opens
-    onShownChanged: if (shown) for (const r of [q1, q2, q3, q4, q5, q6]) r.restart()
+    onShownChanged: {
+        if (shown) for (const r of [q1, q2, q3, q4, q5, q6]) r.restart();
+        else wifiOpen = false;
+    }
     Rise { id: q1; target: qHead; index: 0 }
     Rise { id: q2; target: qTiles; index: 1 }
     Rise { id: q3; target: qSliders; index: 2 }
@@ -19,10 +27,30 @@ Popout {
     Rise { id: q5; target: qEmpty; index: 4 }
     Rise { id: q6; target: nl; index: 4 }
 
+    Item {
+        width: parent.width; height: parent.height
+        clip: true
+        z: 2
+        WifiPage {
+            id: wpage
+            width: parent.width; height: parent.height
+            open: root.wifiOpen
+            x: root.wifiOpen ? 0 : width * 1.06
+            visible: x < width
+            Behavior on x { SpringAnim { ms: 550 } }
+            onBack: root.wifiOpen = false
+        }
+    }
+
     Column {
         id: col
         width: parent.width
         spacing: 10
+        x: root.wifiOpen ? -width * .3 : 0
+        opacity: root.wifiOpen ? 0 : 1
+        enabled: !root.wifiOpen
+        Behavior on x { SpringAnim { ms: 500 } }
+        Behavior on opacity { SmoothAnim { ms: 250 } }
 
         // the head: the battery, the theme, the settings
         Item {
@@ -45,12 +73,15 @@ Popout {
             width: parent.width
             columns: 2
             spacing: 8
-            Tile { icon: "wifi_off"; name: "Wi-Fi"; sub: "Нет адаптера"; dis: true }
+            Tile {
+                icon: Wifi.icon; name: "Wi-Fi"
+                sub: !Wifi.present ? "Нет адаптера" : Wifi.connected ? Wifi.ssid : Wifi.pending ? "Подключение…" : !Wifi.auto ? "Выключено" : Wifi.scanning ? "Поиск…" : "Не подключено"
+                on: Wifi.connected; dis: !Wifi.present
+                onClicked: root.wifiOpen = true
+            }
             Tile { icon: "bluetooth_disabled"; name: "Bluetooth"; sub: "Нет адаптера"; dis: true }
-            Tile { icon: Net.icon; name: "Сеть"; sub: Net.online ? (Net.via || "Подключено") : "Нет"; on: Net.online; dis: true }
             Tile { icon: "do_not_disturb_on"; name: "Не беспокоить"; sub: Notifs.dnd ? "Включено" : "Выключено"; on: Notifs.dnd; onClicked: Config.set("notif.dnd", !Notifs.dnd) }
             Tile { icon: "dark_mode"; name: "Тёмная тема"; sub: Theme.dark ? "Включена" : "Выключена"; on: Theme.dark; onClicked: Config.set("theme.mode", Theme.dark ? "light" : "dark") }
-            Tile { icon: "widgets"; name: "Виджеты"; sub: Ui.editing ? "Правка" : "На столе"; on: Ui.editing; onClicked: { Ui.editing = !Ui.editing; Ui.closeAll(); } }
         }
 
         // the volume, the brightness

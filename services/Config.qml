@@ -18,7 +18,7 @@ Singleton {
         wall: { path: Qt.resolvedUrl("../assets/walls/01-dusk.png").toString().replace("file://", ""), trans: "circle" },
         bar: { pos: "top", style: "islands", height: 52, ws: "pill", clock: "date", attach: false, order: [], viz: false, vizStyle: "bars", vizH: 70,
                mods: { logo: "start", ws: "start", tasks: "off", media: "center", tray: "end", sysmon: "off",
-                       weather: "end", status: "end", bell: "end", clock: "end", power: "end" } },
+                       weather: "end", status: "end", clock: "end", power: "end" } },
         dock: { on: true, style: "attached", pos: "bottom", size: 52, zoom: 1.15, labels: false, inds: true, autohide: "off",
                 apps: ["wynland-terminal", "wynland-files", "wynland-web", "foot"] },
         launcher: { pos: "bottom", view: "grid", cats: true },

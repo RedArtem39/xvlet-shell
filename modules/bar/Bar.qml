@@ -21,7 +21,7 @@ PanelWindow {
     // (islands and the solid strip float: the gap from the edge)
     readonly property bool islands: bcfg.style === "islands" || bcfg.style === "solid"
     readonly property real thick: islands ? bh + 10 : bh
-    readonly property var base: ["logo", "ws", "tasks", "media", "tray", "sysmon", "weather", "status", "bell", "clock", "power"]
+    readonly property var base: ["logo", "ws", "tasks", "media", "tray", "sysmon", "weather", "status", "clock", "power"]
     // the order the user put them in (the settings' constructor: bar.order),
     // the rest after them in their own
     readonly property var order: { const o = (bcfg.order || []).filter(k => base.includes(k)); return o.concat(base.filter(k => !o.includes(k))); }
@@ -57,6 +57,7 @@ PanelWindow {
             visible: root.bcfg.style === "solid"
             radius: root.bh / 2
             color: Theme.glass
+            border.width: 1; border.color: Theme.edge
             Behavior on color { ColorAnim {} }
         }
         Zone { id: zs; bar: root; which: "start" }
@@ -89,6 +90,7 @@ PanelWindow {
             visible: zone.bar.bcfg.style === "islands" || zone.seg
             color: zone.seg ? Theme.surface : Theme.glass
             radius: zone.seg ? zone.fil : zone.bar.bh / 2
+            border.width: zone.seg ? 0 : 1; border.color: Theme.edge
             Behavior on color { ColorAnim {} }
             // seg: the corners on the edge's side are square (covered)
             Rectangle {
@@ -120,7 +122,7 @@ PanelWindow {
                     property bool vert: zone.bar.vert
                     property string barPos: zone.bar.pos
                     source: ({ logo: "Logo.qml", ws: "Workspaces.qml", tasks: "Tasks.qml", media: "MediaMod.qml", tray: "Tray.qml",
-                               sysmon: "SysMon.qml", weather: "WeatherMod.qml", status: "Status.qml", bell: "Bell.qml",
+                               sysmon: "SysMon.qml", weather: "WeatherMod.qml", status: "Status.qml",
                                clock: "Clock.qml", power: "PowerBtn.qml" })[modelData]
                     onLoaded: { if (item.vert !== undefined) item.vert = Qt.binding(() => vert); }
                 }

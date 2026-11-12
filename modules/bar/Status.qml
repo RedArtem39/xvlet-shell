@@ -2,9 +2,12 @@ import QtQuick
 import qs.components
 import qs.services
 
-// The network, the sound and the battery in one pill: quick settings open
-// from it, the wheel turns the volume. What the machine lacks is not drawn
-// (the battery), or drawn crossed out (no way to the network).
+// The network, the sound, the battery and the notifications in one pill:
+// the quick settings (and the notification centre under them) open from it,
+// the wheel turns the volume. A dot while something new waits, a crossed-out
+// bell while Do not disturb is on -- the bell used to be a module of its
+// own opening the same panel. What the machine lacks is not drawn (the
+// battery), or drawn dim (no way to the network).
 Rectangle {
     id: root
     property bool vert: false
@@ -31,6 +34,7 @@ Rectangle {
             MIcon { text: Power.icon; fill: true; size: 20; color: root.ink }
             Label { text: Power.capacity + "%"; size: 13; color: root.ink; anchors.verticalCenter: parent.verticalCenter }
         }
+        MIcon { text: "notifications_off"; fill: true; size: 20; color: root.ink; visible: Notifs.dnd }
     }
     Column {
         id: col
@@ -41,12 +45,21 @@ Rectangle {
         MIcon { text: Audio.icon; fill: true; size: 20; color: root.ink; visible: Audio.present; anchors.horizontalCenter: parent.horizontalCenter }
         MIcon { text: Power.icon; fill: true; size: 20; color: root.ink; visible: Power.present; anchors.horizontalCenter: parent.horizontalCenter }
         Label { text: Power.capacity; size: 11; w: Font.Bold; color: root.ink; visible: Power.present; anchors.horizontalCenter: parent.horizontalCenter }
+        MIcon { text: "notifications_off"; fill: true; size: 20; color: root.ink; visible: Notifs.dnd; anchors.horizontalCenter: parent.horizontalCenter }
+    }
+    // something new waits
+    Rectangle {
+        width: 9; height: 9; radius: 4.5
+        x: parent.width - 13; y: 4
+        color: Theme.error
+        scale: Notifs.badge ? 1 : 0
+        Behavior on scale { SpringAnim {} }
     }
     MouseArea {
         id: area
         anchors.fill: parent
         hoverEnabled: true
-        onClicked: { const p = root.mapToItem(null, root.width / 2, root.height / 2); Ui.toggle("qs", root.vert ? p.y : p.x); }
+        onClicked: { const p = root.mapToItem(null, root.width / 2, root.height / 2); Ui.toggle("qs", root.vert ? p.y : p.x); Notifs.badge = false; }
     }
     WheelHandler { onWheel: e => Audio.step(e.angleDelta.y > 0 ? .05 : -.05) }
 }

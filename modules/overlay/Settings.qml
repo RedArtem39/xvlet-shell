@@ -83,7 +83,7 @@ Item {
                             TextInput {
                                 id: q
                                 anchors.fill: parent
-                                font.family: Theme.font; font.pixelSize: 14
+                                renderType: TextInput.NativeRendering; font.family: Theme.font; font.pixelSize: 14
                                 color: Theme.fgSurface; selectionColor: Theme.primary
                                 clip: true
                             }
@@ -509,15 +509,15 @@ Item {
 
     // ---- Стили ----
     readonly property var presets: [
-        { n: "xvlet", w: 0, c: { bar: { pos: "top", style: "islands", height: 52, ws: "pill", clock: "date", mods: mods({ logo: "start", ws: "start", media: "center", tray: "end", weather: "end", status: "end", bell: "end", clock: "end", power: "end" }) }, dock: { on: true, style: "attached", pos: "bottom", autohide: "off", labels: false }, launcher: { pos: "bottom" } } },
-        { n: "Exo", w: 4, c: { bar: { pos: "top", style: "flush", height: 40, ws: "dots", clock: "date", mods: mods({ ws: "start", media: "start", clock: "center", tray: "end", status: "end", bell: "end" }) }, dock: { on: true, style: "strip", pos: "left", autohide: "off", labels: false, size: 40 }, launcher: { pos: "bar" }, theme: { shellCorners: true, screenCorners: true } } },
+        { n: "xvlet", w: 0, c: { bar: { pos: "top", style: "islands", height: 52, ws: "pill", clock: "date", mods: mods({ logo: "start", ws: "start", media: "center", tray: "end", weather: "end", status: "end", clock: "end", power: "end" }) }, dock: { on: true, style: "attached", pos: "bottom", autohide: "off", labels: false }, launcher: { pos: "bottom" } } },
+        { n: "Exo", w: 4, c: { bar: { pos: "top", style: "flush", height: 40, ws: "dots", clock: "date", mods: mods({ ws: "start", media: "start", clock: "center", tray: "end", status: "end" }) }, dock: { on: true, style: "strip", pos: "left", autohide: "off", labels: false, size: 40 }, launcher: { pos: "bar" }, theme: { shellCorners: true, screenCorners: true } } },
         { n: "Сегменты", w: 9, c: { bar: { pos: "top", style: "seg", height: 48, ws: "pill", clock: "date", mods: mods({ logo: "start", ws: "start", media: "center", tray: "end", status: "end", clock: "end", power: "end" }) }, dock: { on: true, style: "attached", pos: "bottom", autohide: "off", labels: false }, launcher: { pos: "bottom" } } },
-        { n: "Классика", w: 7, c: { bar: { pos: "bottom", style: "solid", height: 52, ws: "numbers", clock: "date", mods: mods({ logo: "start", tasks: "start", media: "center", tray: "end", weather: "end", status: "end", bell: "end", clock: "end", power: "end" }) }, dock: { on: false }, launcher: { pos: "bar" } } },
-        { n: "Вертикальная", w: 2, c: { bar: { pos: "left", style: "islands", height: 52, ws: "pill", clock: "date", mods: mods({ logo: "start", ws: "start", media: "center", status: "end", bell: "end", clock: "end", power: "end" }) }, dock: { on: true, style: "attached", pos: "bottom", autohide: "off", labels: false }, launcher: { pos: "bar" } } },
-        { n: "Рабочая станция", w: 6, c: { bar: { pos: "top", style: "solid", height: 46, ws: "numbers", clock: "date", mods: mods({ logo: "start", ws: "start", tasks: "start", sysmon: "center", tray: "end", status: "end", bell: "end", clock: "end", power: "end" }) }, dock: { on: true, style: "attached", pos: "right", autohide: "off", labels: false, size: 44 }, launcher: { pos: "bar" } } },
+        { n: "Классика", w: 7, c: { bar: { pos: "bottom", style: "solid", height: 52, ws: "numbers", clock: "date", mods: mods({ logo: "start", tasks: "start", media: "center", tray: "end", weather: "end", status: "end", clock: "end", power: "end" }) }, dock: { on: false }, launcher: { pos: "bar" } } },
+        { n: "Вертикальная", w: 2, c: { bar: { pos: "left", style: "islands", height: 52, ws: "pill", clock: "date", mods: mods({ logo: "start", ws: "start", media: "center", status: "end", clock: "end", power: "end" }) }, dock: { on: true, style: "attached", pos: "bottom", autohide: "off", labels: false }, launcher: { pos: "bar" } } },
+        { n: "Рабочая станция", w: 6, c: { bar: { pos: "top", style: "solid", height: 46, ws: "numbers", clock: "date", mods: mods({ logo: "start", ws: "start", tasks: "start", sysmon: "center", tray: "end", status: "end", clock: "end", power: "end" }) }, dock: { on: true, style: "attached", pos: "right", autohide: "off", labels: false, size: 44 }, launcher: { pos: "bar" } } },
         { n: "Минимум", w: 1, c: { bar: { pos: "top", style: "islands", height: 44, ws: "dots", clock: "time", mods: mods({ ws: "start", clock: "center", status: "end" }) }, dock: { on: true, style: "floating", pos: "bottom", autohide: "always", labels: false }, launcher: { pos: "center" } } }
     ]
-    function mods(on) { const all = ["logo", "ws", "tasks", "media", "tray", "sysmon", "weather", "status", "bell", "clock", "power"], o = {}; for (const k of all) o[k] = on[k] || "off"; return o; }
+    function mods(on) { const all = ["logo", "ws", "tasks", "media", "tray", "sysmon", "weather", "status", "clock", "power"], o = {}; for (const k of all) o[k] = on[k] || "off"; return o; }
     property int presetOn: -1
     function applyPreset(i) { Config.data = Config.merge(Config.data, presets[i].c); Config.set("theme.radius", Config.data.theme.radius); presetOn = i; }
     Connections { target: Ui; function onPresetRequested(i) { root.applyPreset(i); } }
@@ -774,7 +774,7 @@ Item {
                         Column { anchors.centerIn: parent; width: parent.width - 28; spacing: 8
                             Rectangle { width: parent.width; height: 34; radius: 12; color: Theme.surfaceHighest
                                 TextInput { id: tname; anchors.fill: parent; leftPadding: 12; rightPadding: 12; verticalAlignment: TextInput.AlignVCenter; clip: true
-                                    font.family: Theme.font; font.pixelSize: 13; font.weight: 600; font.variableAxes: ({ wght: 600 }); color: Theme.fgSurface }
+                                    renderType: TextInput.NativeRendering; font.family: Theme.font; font.pixelSize: 13; font.weight: 600; font.variableAxes: ({ wght: 600 }); color: Theme.fgSurface }
                                 Label { x: 12; anchors.verticalCenter: parent.verticalCenter; visible: tname.text === ""; text: "Тема " + ((root.cfg.theme.saved || []).length + 1); size: 13; w: 600; dim: true } }
                             Mini { anchors.horizontalCenter: parent.horizontalCenter; pri: true; icon: "bookmark_add"; text: "Сохранить текущую"
                                 onClicked: { const T = root.cfg.theme, t = Theme.now, n = tname.text.trim() || "Тема " + ((T.saved || []).length + 1);
@@ -811,8 +811,7 @@ Item {
         { k: "tray", n: "Трей", d: "Значки фоновых приложений", i: "apps" },
         { k: "sysmon", n: "Ресурсы", d: "Загрузка процессора и памяти", i: "memory" },
         { k: "weather", n: "Погода", d: "Температура; клик — обзор", i: "partly_cloudy_day" },
-        { k: "status", n: "Статус", d: "Сеть, звук, батарея — быстрые настройки", i: "wifi" },
-        { k: "bell", n: "Уведомления", d: "Центр уведомлений", i: "notifications" },
+        { k: "status", n: "Статус", d: "Сеть, звук, батарея, уведомления — быстрые настройки", i: "wifi" },
         { k: "clock", n: "Часы", d: "Время и дата; клик — панель", i: "schedule" },
         { k: "power", n: "Питание", d: "Блокировка, выход, выключение", i: "power_settings_new" }
     ]
