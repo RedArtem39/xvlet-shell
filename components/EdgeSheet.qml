@@ -53,7 +53,7 @@ Item {
                 anchors.fill: parent
                 readonly property string s: root.attached ? root.side : ""
                 color: root.attached ? Theme.surface : Theme.surfaceLow
-                border.width: root.attached ? 0 : 1; border.color: Theme.alpha(Theme.fgSurface, .06)
+                border.width: root.attached ? 0 : 1; border.color: Theme.edge
                 topLeftRadius: s === "top" || s === "left" ? 0 : root.r
                 topRightRadius: s === "top" || s === "right" ? 0 : root.r
                 bottomLeftRadius: s === "bottom" || s === "left" ? 0 : root.r

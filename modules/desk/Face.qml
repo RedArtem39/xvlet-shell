@@ -33,6 +33,7 @@ Item {
     component Glass: Rectangle {
         radius: Theme.r
         color: Theme.glass
+        border.width: 1; border.color: Theme.edge
     }
 
     // ---- clocks ----
@@ -127,6 +128,7 @@ Item {
                 id: st
                 text: Qt.formatTime(clock.date, "hh:mm")
                 font.family: Theme.font
+                renderType: Text.CurveRendering        // (scaled: curves, not a bitmap; no distance-field splinters either)
                 font.pixelSize: Math.max(8, root.height * 1.05)
                 font.variableAxes: ({ wght: 150, wdth: 25, opsz: 144 })
                 color: Theme.alpha(Theme.fgSurface, .92)
@@ -429,7 +431,7 @@ Item {
             TextEdit {
                 x: 20; y: 18 + 24 + 8; width: parent.width - 40; height: parent.height - y - 18
                 text: Config.data.desk.note || ""
-                font.family: Theme.font; font.pixelSize: 15; font.weight: 500; font.variableAxes: ({ wght: 500 })
+                renderType: TextInput.NativeRendering; font.family: Theme.font; font.pixelSize: 15; font.weight: 500; font.variableAxes: ({ wght: 500 })
                 color: parent.ink
                 wrapMode: TextEdit.Wrap
                 readOnly: Ui.editing

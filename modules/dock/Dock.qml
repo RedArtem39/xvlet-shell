@@ -95,6 +95,7 @@ PanelWindow {
             visible: root.style !== "strip"
             radius: root.rad
             color: root.style === "floating" ? Theme.glass : Theme.surface
+            border.width: root.style === "floating" ? 1 : 0; border.color: Theme.edge
             Behavior on color { ColorAnim {} }
             Rectangle {
                 // the edge's side is square

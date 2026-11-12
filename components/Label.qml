@@ -13,5 +13,10 @@ Text {
     font.variableAxes: ({ wght: w, opsz: Math.max(8, Math.min(144, size)) })
     color: dim ? Theme.fgSurfaceVar : Theme.fgSurface
     elide: Text.ElideRight
+    // FreeType, not Qt's distance fields: Roboto Flex is a variable font,
+    // its glyphs' contours overlap (the 6's bowl and stem), and the
+    // distance-field renderer left splinters where they do (MIcon has
+    // always had this for the same reason)
+    renderType: Text.NativeRendering
     Behavior on color { ColorAnim { ms: 300 } }
 }

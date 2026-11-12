@@ -128,7 +128,7 @@ Item {
                     TextInput {
                         id: field
                         x: 62; width: parent.width - 84; anchors.verticalCenter: parent.verticalCenter
-                        font.family: Theme.font; font.pixelSize: 19; font.weight: 500; font.variableAxes: ({ wght: 500 })
+                        renderType: TextInput.NativeRendering; font.family: Theme.font; font.pixelSize: 19; font.weight: 500; font.variableAxes: ({ wght: 500 })
                         color: Theme.fgSurface
                         selectionColor: Theme.primary; selectedTextColor: Theme.fgPrimary
                         clip: true

@@ -90,6 +90,32 @@ Singleton {
     // a role of the scheme, or the fallback
     function role(name, fb) { return dyn ? argbColor(dyn[name]) : fb; }
 
+    // ---- apart from the wallpaper ----
+    // Material You's surfaces are its neutral palette at fixed tones: over a
+    // wallpaper of the same hue and about the same lightness the panels sink
+    // into it. How light the wallpaper is (its colours' mean OKLab L), and
+    // how far the surfaces are moved away from it: a dark theme over a dark
+    // wallpaper lifts them some tones (a light one over a light wallpaper
+    // lowers them) -- same hue and chroma, from the same palette -- and the
+    // panels get a faint edge (Theme.edge).
+    readonly property real wallL: {
+        const cs = quant.colors || [];
+        if (!cs.length) return .5;
+        let s = 0;
+        for (const c of cs) s += toOklch(c.r, c.g, c.b)[0];
+        return s / cs.length;
+    }
+    readonly property real lift: th.src === "custom" && !Config.data.wall.path ? 0
+                                 : dark ? Math.max(0, Math.min(1, (.45 - wallL) / .3)) : Math.max(0, Math.min(1, (wallL - .68) / .22))
+    function surf(name, fb) {
+        if (!dyn) return fb;
+        try {
+            const M = Mcu.MCU, t = M.Hct.fromInt(dyn[name]).tone;
+            return argbColor(dyn.neutralPalette.tone(Math.max(0, Math.min(100, dark ? t + 9 * lift : t - 6 * lift))));
+        } catch (e) { return argbColor(dyn[name]); }
+    }
+    readonly property color edge: alpha(dyn ? argbColor(dyn.outlineVariant) : outline, .18 + .37 * lift)
+
     // ---- the roles (shell.css :root[data-theme]) ----
     readonly property color primary:              role("primary", dark ? oklch(80, pal.cp, pal.hp) : oklch(45, pal.cp, pal.hp))
     readonly property color fgPrimary:            role("onPrimary", dark ? oklch(25, pal.cp * .9, pal.hp) : oklch(100, 0, 0))
@@ -100,15 +126,15 @@ Singleton {
     readonly property color tertiary:             role("tertiary", dark ? oklch(80, pal.ct, pal.ht) : oklch(48, pal.ct, pal.ht))
     readonly property color tertiaryContainer:    role("tertiaryContainer", dark ? oklch(36, pal.ct * .9, pal.ht) : oklch(90, pal.ct * .65, pal.ht))
     readonly property color fgTertiaryContainer:  role("onTertiaryContainer", dark ? oklch(91, pal.ct * .5, pal.ht) : oklch(26, pal.ct * .8, pal.ht))
-    readonly property color surface:              role("surface", dark ? oklch(16.5, pal.cn * .8, pal.hn) : oklch(97.5, pal.cn * .45, pal.hn))
-    readonly property color surfaceLow:           role("surfaceContainerLow", dark ? oklch(19.5, pal.cn * .9, pal.hn) : oklch(95.5, pal.cn * .55, pal.hn))
-    readonly property color surfaceMid:           role("surfaceContainer", dark ? oklch(22.5, pal.cn, pal.hn) : oklch(93.5, pal.cn * .7, pal.hn))
-    readonly property color surfaceHigh:          role("surfaceContainerHigh", dark ? oklch(26, pal.cn * 1.05, pal.hn) : oklch(91.5, pal.cn * .75, pal.hn))
-    readonly property color surfaceHighest:       role("surfaceContainerHighest", dark ? oklch(30, pal.cn * 1.1, pal.hn) : oklch(89, pal.cn * .8, pal.hn))
+    readonly property color surface:              surf("surface", dark ? oklch(16.5, pal.cn * .8, pal.hn) : oklch(97.5, pal.cn * .45, pal.hn))
+    readonly property color surfaceLow:           surf("surfaceContainerLow", dark ? oklch(19.5, pal.cn * .9, pal.hn) : oklch(95.5, pal.cn * .55, pal.hn))
+    readonly property color surfaceMid:           surf("surfaceContainer", dark ? oklch(22.5, pal.cn, pal.hn) : oklch(93.5, pal.cn * .7, pal.hn))
+    readonly property color surfaceHigh:          surf("surfaceContainerHigh", dark ? oklch(26, pal.cn * 1.05, pal.hn) : oklch(91.5, pal.cn * .75, pal.hn))
+    readonly property color surfaceHighest:       surf("surfaceContainerHighest", dark ? oklch(30, pal.cn * 1.1, pal.hn) : oklch(89, pal.cn * .8, pal.hn))
     readonly property color fgSurface:            role("onSurface", dark ? oklch(93, pal.cn * .35, pal.hn) : oklch(22, pal.cn * .5, pal.hn))
     readonly property color fgSurfaceVar:         role("onSurfaceVariant", dark ? oklch(78, pal.cn * .8, pal.hn) : oklch(42, pal.cn * .85, pal.hn))
     readonly property color outline:              role("outlineVariant", dark ? oklch(45, pal.cn * .9, pal.hn) : oklch(70, pal.cn * .7, pal.hn))
-    readonly property color glass:                dyn ? argbColor(dyn.surfaceContainerLow, dark ? .82 : .84) : (dark ? oklch(19, pal.cn * .9, pal.hn, .82) : oklch(96, pal.cn * .5, pal.hn, .84))
+    readonly property color glass:                dyn ? alpha(surfaceLow, (dark ? .82 : .84) + .1 * lift) : (dark ? oklch(19, pal.cn * .9, pal.hn, .82) : oklch(96, pal.cn * .5, pal.hn, .84))
     readonly property color scrim:                dark ? oklch(8, pal.cn * .7, pal.hn, .55) : oklch(30, pal.cn * .7, pal.hn, .35)
     readonly property color error:                role("error", dark ? oklch(72, .16, 25) : oklch(52, .18, 25))
     readonly property color errorContainer:       role("errorContainer", dark ? oklch(38, .12, 25) : oklch(90, .06, 25))
@@ -165,6 +191,7 @@ Singleton {
     }
     readonly property var shCircle: shape(1, 0)
     readonly property var shCookie9: shape(9, 3.2)
+    readonly property var shPlaying: shape(9, 3)      // the playing cover: Resonance's cookie (9 lobes, .06)
     readonly property var shCookie12: shape(12, 2.4)
     readonly property var shCookie4: shape(4, 5, Math.PI / 4)
     readonly property var shFlower: shape(8, 7, 0, .6)
