@@ -176,9 +176,9 @@ Popout {
         Card {
             id: md
             visible: Ui.dashTab === "md"
-            width: parent.width; implicitHeight: 256
+            width: parent.width; implicitHeight: bigMedia.implicitHeight + 48
             height: implicitHeight
-            MediaCard { x: 18; width: parent.width - 36; anchors.verticalCenter: parent.verticalCenter; art: 220; big: true }
+            MediaCard { id: bigMedia; x: 26; y: 26; width: parent.width - 52; art: 320; big: true }
         }
 
         // ---- the system: four gauges, the processor's history ----
